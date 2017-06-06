@@ -17,9 +17,20 @@ void test1()
 	printf("nat_node:%zu\n", sizeof(rocksdb::ocssd::nat_node));
 }
 
+void test_addr()
+{
+	rocksdb::ocssd::addr::tree_meta tm1;
+	rocksdb::ocssd::oc_ssd ssd1;
+	tm1.ch = 0;
+	tm1.nluns = 4;
+	tm1.stlun = 0;
+
+	rocksdb::ocssd::addr::blk_addr_handle blk(ssd1.Get_geo(), &tm1); 
+	printf("success.\n");
+}
 
 int main()
 {
-	test1();
+	test_addr();
 	return 0;
 }

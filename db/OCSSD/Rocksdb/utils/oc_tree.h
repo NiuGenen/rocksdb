@@ -82,6 +82,7 @@ public:
 		CalcOF = 7			//calculation: overflow/underflow occur
 	};
 	
+	void convert_2_nvm_addr(struct blk_addr *blk_a, struct nvm_addr *nvm_a);
 	int MakeBlkAddr(size_t ch, size_t lun, size_t pl, size_t blk, struct blk_addr* addr);
 	ssize_t GetFieldFromBlkAddr(struct blk_addr const * addr, int field, bool isidx);
 	ssize_t SetFieldBlkAddr(size_t val, int field, struct blk_addr * addr, bool isidx);

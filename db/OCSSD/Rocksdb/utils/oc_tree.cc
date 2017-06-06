@@ -46,6 +46,17 @@ void blk_addr_handle::init()
 	MakeBlkAddr(tm_->ch, tm_->stlun + tm_->nluns - 1, geo_->nplanes - 1, geo_->nblocks - 1, &highest); 
 }
 
+void convert_2_nvm_addr(struct blk_addr *blk_a, struct nvm_addr *nvm_a)
+{
+	uint64_t tmp[4];
+	for (int idx = 0; idx < 4; idx++) {
+		tmp[idx] = (blk_a->__buf & mask_[idx]) >> lmov_[idx];
+	}
+	nvm_a->g.ch = tmp[format_.ch];
+	nvm_a->g.lun = tmp[format_.lun]; 
+	nvm_a->g.pl = tmp[format_.pl];
+	nvm_a->g.blk = tmp[format_.blk]; 
+}
 int blk_addr_handle::MakeBlkAddr(size_t ch, 
 	size_t lun, 
 	size_t pl, 

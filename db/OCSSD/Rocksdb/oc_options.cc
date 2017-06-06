@@ -13,6 +13,8 @@ namespace rocksdb {
             const GCPolicy kGCPolicy = kOneLunSerial;
 
             const int kOCFileNodeDegree = 6;
+			const size_t kStChannel = 0;
+			const size_t kEdChannel = 0;
         };
 
 

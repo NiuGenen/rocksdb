@@ -63,11 +63,15 @@ private:
 		const std::string dev_path_;
 		struct nvm_dev *dev_;
 		const struct nvm_geo *geo_;
+		size_t ch_st_;
+		size_t ch_ed_;
 
 		oc_ssd_descriptor(const char *path = oc_options::kDevPath) throw (dev_init_exception)
 		 : dev_path_(path), 
 		 dev_(NULL), 
-		 geo_(NULL)
+		 geo_(NULL),
+		 ch_st_(oc_options::kStChannel),
+		 ch_ed_(oc_options::kEdChannel)
 		{
 			dev_ = nvm_dev_open(dev_path_.c_str());
 			if (!dev_) {
