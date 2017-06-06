@@ -2,8 +2,7 @@
 #define YWJ_OCSSD_OC_PAGE_CACHE_H
 
 //liblightnvm headers
-#include "liblightnvm.h"
-#include "nvm.h"
+#include "oc_lnvm.h"
 
 #include "rocksdb/status.h"
 #include "rocksdb/env.h"

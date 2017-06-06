@@ -2,8 +2,7 @@
 #define YWJ_OCSSD_OC_TREE_H
 
 //liblightnvm headers
-#include "liblightnvm.h"
-#include "../nvm.h"
+#include "../oc_lnvm.h"
 
 #include <stdint.h>
 
@@ -172,6 +171,12 @@ void addr_release();
 } // namespace addr
 
 /*Tree's logic goes here*/
+typedef uint32_t file_meta_number_t;
+
+
+
+
+
 struct extent{
 	uint64_t addr_st_buf;
 	uint64_t addr_ed_buf;

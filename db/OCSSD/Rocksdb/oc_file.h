@@ -10,8 +10,7 @@
 #include "oc_block_manager.h"
 
 //liblightnvm headers
-#include "liblightnvm.h"
-#include "nvm.h"
+#include "oc_lnvm.h"
 
 
 namespace rocksdb {

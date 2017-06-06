@@ -9,8 +9,7 @@
 
 
 //liblightnvm headers
-#include "liblightnvm.h"
-#include "nvm.h"
+#include "oc_lnvm.h"
 
 #include "utils/common.h"
 #include "utils/oc_exception.hpp"

@@ -296,8 +296,6 @@ add_subdirectory(third-party/gtest-1.7.0/fused-src/gtest)
 # Main library source code
 
 set(SOURCES
-        db/OCSSD/Rocksdb/liblightnvm.h
-        db/OCSSD/Rocksdb/nvm.h
         db/OCSSD/Rocksdb/oc_block_manager.cc
         db/OCSSD/Rocksdb/oc_block_manager.h
         db/OCSSD/Rocksdb/oc_file.cc

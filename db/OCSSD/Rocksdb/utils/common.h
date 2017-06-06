@@ -10,6 +10,20 @@ namespace ocssd {
 void StrAppendTime(std::string& str);
 std::string& StrAppendInt(std::string& str, int val);
 
+#define NVM_MIN(x, y) ({                \
+        __typeof__(x) _min1 = (x);      \
+        __typeof__(y) _min2 = (y);      \
+        (void) (&_min1 == &_min2);      \
+        _min1 < _min2 ? _min1 : _min2; })
+
+#define NVM_MAX(x, y) ({                \
+        __typeof__(x) _min1 = (x);      \
+        __typeof__(y) _min2 = (y);      \
+        (void) (&_min1 == &_min2);      \
+        _min1 > _min2 ? _min1 : _min2; })
+
+
+
 // get binary mask of @x
 template<typename XType>
 int GetBinMaskBits(XType x)

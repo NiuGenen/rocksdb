@@ -4,8 +4,7 @@
 #include "rocksdb/status.h"
 
 //liblightnvm headers
-#include "liblightnvm.h"
-#include "nvm.h"
+#include "oc_lnvm.h"
 
 
 namespace rocksdb {

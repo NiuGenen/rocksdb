@@ -1,9 +1,9 @@
 /*
  * User space I/O library for Open-Channel SSDs
  *
- * Copyright (C) 2015 Javier González <javier@cnexlabs.com>
- * Copyright (C) 2015 Matias González <javier@cnexlabs.com>
- * Copyright (C) 2016 Simon A. F. Lund <slund@cnexlabs.com>
+ * Copyright (C) 2015-2017 Javier Gonzáles <javier@cnexlabs.com>
+ * Copyright (C) 2015-2017 Matias Bjørling <matias@cnexlabs.com>
+ * Copyright (C) 2015-2017 Simon A. F. Lund <slund@cnexlabs.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,25 +38,35 @@ extern "C" {
 
 #include <stdint.h>
 #include <sys/types.h>
+#include <liblightnvm_spec.h>
 
 #define NVM_NADDR_MAX 64
 
 #define NVM_DEV_NAME_LEN 32
 #define NVM_DEV_PATH_LEN (NVM_DEV_NAME_LEN + 5)
 
-#define NVM_FLAG_PMODE_SNGL 0x0	///< Single-plane
-#define NVM_FLAG_PMODE_DUAL 0x1	///< Dual-plane (NVM_IO_DUAL_ACCESS)
-#define NVM_FLAG_PMODE_QUAD 0x2	///< Quad-plane (NVM_IO_QUAD_ACCESS)
 #define NVM_FLAG_SCRBL 0x200	///< Scrambler ON/OFF: Context sensitive
 
-#define NVM_FLAG_DEFAULT (NVM_FLAG_PMODE_SNGL | NVM_FLAG_SCRBL);
+/**
+ * Enumeration of cmd back-ends used by liblightnvm
+ */
+enum nvm_be_id {
+	NVM_BE_ANY = 0x0,	///< Flag for ANY backend
+	NVM_BE_IOCTL = 0x1,	///< Flag for the IOCTL backend
+	NVM_BE_SYSFS = 0x2,	///< Flag for the IOCTL + sysfs backend
+	NVM_BE_LBA = 0x4,	///< Flag for the IOCTL + sysfs + LBA backend
+};
+#define NVM_BE_ALL (NVM_BE_IOCTL | NVM_BE_SYSFS | NVM_BE_LBA)	///< All be identifiers
 
-#define NVM_BLK_BITS (16)	///< Number of bits for block field
-#define NVM_PG_BITS  (16)	///< Number of bits for page field
-#define NVM_SEC_BITS (8)	///< Number of bits for sector field
-#define NVM_PL_BITS  (8)	///< Number of bits for plane field
-#define NVM_LUN_BITS (8)	///< Number of bits for LUN field
-#define NVM_CH_BITS  (7)	///< NUmber of bits for channel field
+/**
+ * Plane-mode access for IO
+ */
+enum nvm_pmode {
+	NVM_FLAG_PMODE_SNGL = 0x0,	///< Single-plane
+	NVM_FLAG_PMODE_DUAL = 0x1,	///< Dual-plane (NVM_IO_DUAL_ACCESS)
+	NVM_FLAG_PMODE_QUAD = 0x2	///< Quad-plane (NVM_IO_QUAD_ACCESS)
+};
+#define NVM_FLAG_DEFAULT (NVM_FLAG_PMODE_SNGL | NVM_FLAG_SCRBL);
 
 /**
  * Opaque handle for NVM devices
@@ -81,12 +91,18 @@ struct nvm_dev;
  */
 struct nvm_vblk;
 
-enum meta_mode {
+/**
+ * Enumeration of pseudo meta mode
+ */
+enum nvm_meta_mode {
 	NVM_META_MODE_NONE = 0x0,
 	NVM_META_MODE_ALPHA = 0x1,
 	NVM_META_MODE_CONST = 0x2
 };
 
+/**
+ * Enumeration of device bounds
+ */
 enum nvm_bounds {
 	NVM_BOUNDS_CHANNEL = 1,
 	NVM_BOUNDS_LUN = 2,
@@ -105,6 +121,171 @@ struct nvm_ret {
 };
 
 /**
+ * @struct nvm_cmd_vuser
+ * @struct nvm_cmd_vadmin
+ * @struct nvm_cmd_user
+ * @struct nvm_cmd_admin
+ */
+
+/**
+ * Encapsulation of lowest-level user and admin commands
+ */
+struct nvm_cmd {
+	union {
+		struct {
+			uint8_t opcode;
+			uint8_t flags;
+			uint16_t control;
+			uint16_t nppas;
+			uint16_t rsvd;
+			uint64_t metadata;
+			uint64_t addr;
+			uint64_t ppa_list;
+			uint32_t metadata_len;
+			uint32_t data_len;
+			uint64_t status;
+			uint32_t result;
+			uint32_t rsvd3[3];
+		} vuser;	///< Common fields for vector user commands
+
+		struct {
+			uint8_t opcode;
+			uint8_t flags;
+			uint8_t rsvd[2];
+			uint32_t nsid;
+			uint32_t cdw2;
+			uint32_t cdw3;
+			uint64_t metadata;
+			uint64_t addr;
+			uint32_t metadata_len;
+			uint32_t data_len;
+			uint64_t ppa_list;
+			uint16_t nppas;
+			uint16_t control;
+			uint32_t cdw13;
+			uint32_t cdw14;
+			uint32_t cdw15;
+			uint64_t status;
+			uint32_t result;
+			uint32_t timeout_ms;
+		} vadmin;	///< Common fields for vector admin commands
+
+		struct {
+			uint8_t opcode;
+			uint8_t flags;
+			uint16_t rsvd1;
+			uint32_t nsid;
+			uint32_t cdw2;
+			uint32_t cdw3;
+			uint64_t metadata;
+			uint64_t addr;
+			uint32_t metadata_len;
+			uint32_t data_len;
+			uint32_t cdw10;
+			uint32_t cdw11;
+			uint32_t cdw12;
+			uint32_t cdw13;
+			uint32_t cdw14;
+			uint32_t cdw15;
+			uint32_t timeout_ms;
+			uint32_t result;
+		} admin;	///< Common fields for admin commands
+
+		struct {
+			uint8_t opcode;
+			uint8_t flags;
+			uint16_t control;
+			uint16_t nblocks;
+			uint16_t rsvd;
+			uint64_t metadata;
+			uint64_t addr;
+			uint64_t slba;
+			uint32_t dsmgmt;
+			uint32_t reftag;
+			uint16_t apptag;
+			uint16_t appmask;
+		} user;		///< Common fields for user commands
+
+		uint32_t cdw[20];	///< Command as array of dwords
+	};
+};
+
+/**
+ * Obtain string representation of the given plane-mode
+ *
+ * @param pmode The plane-mode to obtain string representation of
+ *
+ * @returns On success, string representation of the given plane-mode. On error,
+ * "UNKN".
+ */
+const char *nvm_pmode_str(int pmode);
+
+/**
+ * Execute an user command on the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @param cmd The command to execute
+ * @param ret Pointer to struct to fill with lower-level result-codes
+ *
+ * @returns On success, 0 is returned. On error, -1 is returned, `errno` set to
+ * indicate the error and ret filled with lower-level result codes
+ */
+int nvm_cmd_user(struct nvm_dev *dev, struct nvm_cmd *cmd, struct nvm_ret *ret);
+
+/**
+ * Execute an admin command on the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @param cmd The command to execute
+ * @param ret Pointer to struct to fill with lower-level result-codes
+ *
+ * @returns On success, 0 is returned. On error, -1 is returned, `errno` set to
+ * indicate the error and ret filled with lower-level result codes
+ */
+int nvm_cmd_admin(struct nvm_dev *dev, struct nvm_cmd *cmd,
+		  struct nvm_ret *ret);
+
+/**
+ * Execute a vector user command on the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @param cmd The command to execute
+ * @param ret Pointer to struct to fill with lower-level result-codes
+ *
+ * @returns On success, 0 is returned. On error, -1 is returned, `errno` set to
+ * indicate the error and ret filled with lower-level result codes
+ */
+int nvm_cmd_vuser(struct nvm_dev *dev, struct nvm_cmd *cmd,
+		  struct nvm_ret *ret);
+
+/**
+ * Execute a vector admin command on the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @param cmd The command to execute
+ * @param ret Pointer to struct to fill with lower-level result-codes
+ *
+ * @returns On success, 0 is returned. On error, -1 is returned, `errno` set to
+ * indicate the error and ret filled with lower-level result codes
+ */
+int nvm_cmd_vadmin(struct nvm_dev *dev, struct nvm_cmd *cmd,
+		   struct nvm_ret *ret);
+
+/**
+ * Prints a text-representation of the given command
+ *
+ * @param cmd The command to print
+ */
+void nvm_cmd_pr(struct nvm_cmd *cmd);
+
+/**
+ * Prints a textual presentation of the vuser par of the given command
+ *
+ * @param cmd The command to print
+ */
+void nvm_cmd_vuser_pr(struct nvm_cmd *cmd);
+
+/**
  * Encapsulation of generic physical nvm addressing
  *
  * Although the user need not worry about device specific address formats the
@@ -120,13 +301,13 @@ struct nvm_addr {
 		 * Address packing and geometric accessors
 		 */
 		struct {
-			uint64_t blk	: NVM_BLK_BITS;	///< Block address
-			uint64_t pg	: NVM_PG_BITS;	///< Page address
-			uint64_t sec	: NVM_SEC_BITS;	///< Sector address
-			uint64_t pl	: NVM_PL_BITS;	///< Plane address
-			uint64_t lun	: NVM_LUN_BITS;	///< LUN address
-			uint64_t ch	: NVM_CH_BITS;	///< Channel address
-			uint64_t rsvd	: 1;		///< Reserved
+			uint64_t blk	: 16;	///< Block address
+			uint64_t pg	: 16;	///< Page address
+			uint64_t sec	: 8;	///< Sector address
+			uint64_t pl	: 8;	///< Plane address
+			uint64_t lun	: 8;	///< LUN address
+			uint64_t ch	: 7;	///< Channel address
+			uint64_t rsvd	: 1;	///< Reserved
 		} g;
 
 		struct {
@@ -156,8 +337,6 @@ struct nvm_geo {
 	size_t meta_nbytes;	///< Number of bytes for out-of-bound / metadata
 
 	size_t tbytes;		///< Total number of bytes in geometry
-	size_t vblk_nbytes;	///< Number of bytes per virtual block
-	size_t vpg_nbytes;	///< Number of bytes per virtual page
 };
 
 /**
@@ -181,8 +360,12 @@ enum nvm_bbt_state {
 struct nvm_bbt {
 	struct nvm_dev *dev;	///< Device on which the bbt resides
 	struct nvm_addr addr;	///< Address of the LUN described by the bbt
-	uint8_t *blks;	///< Array containing block status for each block in LUN
-	uint64_t nblks;	///< Length of the bad block array
+	uint64_t nblks;		///< Total # of blocks in lun
+	uint32_t nbad;		///< # of manufacturer marked bad blocks
+	uint32_t ngbad;		///< # of grown bad blocks
+	uint32_t ndmrk;		///< # of device reserved/marked blocks
+	uint32_t nhmrk;		///< # of of host reserved/marked blocks
+	uint8_t blks[];		///< Array of block status for each block in LUN
 };
 
 /**
@@ -237,12 +420,12 @@ ssize_t nvm_lba_pwrite(struct nvm_dev *dev, const void *buf, size_t count,
  *
  * @param ret Pointer to the `struct nvm_ret` to print
  */
-void nvm_ret_pr(struct nvm_ret *ret);
+void nvm_ret_pr(const struct nvm_ret *ret);
 
 /**
  * Retrieves a bad block table from device
  *
- * @param dev The device on which to retrieve a bad-block-table from
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addr Address of the LUN to retrieve bad-block-table for
  * @param ret Pointer to structure in which to store lower-level status and
  *            result
@@ -250,20 +433,20 @@ void nvm_ret_pr(struct nvm_ret *ret);
  * NULL is returned, `errno` set to indicate the error and ret filled with
  * lower-level result codes
  */
-const struct nvm_bbt* nvm_bbt_get(struct nvm_dev *dev, struct nvm_addr addr,
+const struct nvm_bbt *nvm_bbt_get(struct nvm_dev *dev, struct nvm_addr addr,
 				  struct nvm_ret *ret);
 
 /**
  * Updates the bad-block-table on given device using the provided bbt
  *
- * @param dev The device on which to update a bad-block-table
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param bbt The bbt to write to device
  * @param ret Pointer to structure in which to store lower-level status and
  *            result
  * @returns On success, 0 is returned. On error, -1 is returned, `errno` set to
  * indicate the error and ret filled with lower-level result codes
  */
-int nvm_bbt_set(struct nvm_dev *dev, const struct nvm_bbt* bbt,
+int nvm_bbt_set(struct nvm_dev *dev, const struct nvm_bbt *bbt,
 		struct nvm_ret *ret);
 
 /**
@@ -276,7 +459,7 @@ int nvm_bbt_set(struct nvm_dev *dev, const struct nvm_bbt* bbt,
  *
  * @see `enum nvm_bbt_state`
  *
- * @param dev Device handle
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addrs Array of memory address
  * @param naddrs Length of memory address array
  * @param flags 0x0 = GOOD, 0x1 = BAD, 0x2 = GROWN_BAD, as well as access mode
@@ -292,7 +475,7 @@ int nvm_bbt_mark(struct nvm_dev *dev, struct nvm_addr addrs[], int naddrs,
  * Persist the bad-block-table at `addr` on device and deallocate managed memory
  * for the given bad-block-table describing the LUN at `addr`.
  *
- * @param dev Device handle
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addr Address of the LUN to flush bad-block-table for
  * @param ret Pointer to structure in which to store lower-level status and
  *            result
@@ -305,7 +488,7 @@ int nvm_bbt_flush(struct nvm_dev *dev, struct nvm_addr addr,
 /**
  * Persist all bad-block-tables associated with the given `dev`
  *
- * @param dev Device handle
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param ret Pointer to structure in which to store lower-level status and
  *            result
  * @returns On success, 0 is returned. On error, -1 is returned, `errno` set to
@@ -336,7 +519,6 @@ void nvm_bbt_free(struct nvm_bbt *bbt);
  */
 void nvm_bbt_pr(const struct nvm_bbt *bbt);
 
-
 /**
  * Prints a humanly readable representation of the given bad-block-table state
  */
@@ -354,40 +536,148 @@ void nvm_geo_pr(const struct nvm_geo *geo);
  *
  * @returns A handle to the device
  */
-struct nvm_dev * nvm_dev_open(const char *dev_path);
+struct nvm_dev *nvm_dev_open(const char *dev_path);
+
+/**
+ * Creates a handle to given device path
+ *
+ * @param dev_path Path of the device to open e.g. "/dev/nvme0n1"
+ * @param flags Flags for opening device in different modes
+ *
+ * @returns A handle to the device
+ */
+struct nvm_dev *nvm_dev_openf(const char *dev_path, int flags);
 
 /**
  * Destroys device-handle
  *
- * @param dev Handle to destroy
+ * @param dev Device handle obtained with `nvm_dev_open`
  */
 void nvm_dev_close(struct nvm_dev *dev);
 
 /**
- * Prints information about the device associated with the given handle
+ * Prints misc. device attribute associated with the given handle
  *
- * @param dev Handle of the device to print information about
+ * @param dev Device handle obtained with `nvm_dev_open`
  */
-void nvm_dev_pr(struct nvm_dev *dev);
+void nvm_dev_attr_pr(const struct nvm_dev *dev);
+
+/**
+ * Prints all information about the device associated with the given handle
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ */
+void nvm_dev_pr(const struct nvm_dev *dev);
+
+/**
+ * Returns the file-descriptor associated with the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @return On success, file descriptor is returned
+ */
+int nvm_dev_get_fd(const struct nvm_dev *dev);
+
+/**
+ * Returns the name associated with the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @return On success, string is returned. On error, NULL is returned.
+ */
+const char *nvm_dev_get_name(const struct nvm_dev *dev);
+
+/**
+ * Returns the path associated with the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @return On success, string is returned. On error, NULL is returned.
+ */
+const char *nvm_dev_get_path(const struct nvm_dev *dev);
+
+/**
+ * Returns the NVME namespace identifier of the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ *
+ * @return On success, NVME namespace identifier is returned.
+ */
+int nvm_dev_get_nsid(const struct nvm_dev *dev);
+
+/**
+ * Returns the verid of the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @return On success, verid is returned
+ */
+int nvm_dev_get_verid(const struct nvm_dev *dev);
+
+/**
+ * Returns the media-controller capabilities mask of the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @return On success, capabilities mask is returned
+ */
+uint32_t nvm_dev_get_mccap(const struct nvm_dev *dev);
 
 /**
  * Returns the default plane_mode of the given device
  *
- * @param dev The device to obtain the default plane mode for
- * @return On success, pmode flag is returned.
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @return On success, pmode flag is returned
  */
-int nvm_dev_get_pmode(struct nvm_dev *dev);
+int nvm_dev_get_pmode(const struct nvm_dev *dev);
 
-int nvm_dev_get_meta_mode(struct nvm_dev *dev);
+/**
+ * Set the default plane-mode for the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @param pmode Default plane-mode
+ *
+ * @returns 0 on success, -1 on error and errno set to indicate the error.
+ */
+int nvm_dev_set_pmode(struct nvm_dev *dev, int pmode);
+
+/**
+ * Returns the ppa-format of the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @return On success, ppa-format is returned
+ *
+ */
+const struct nvm_spec_ppaf_nand *nvm_dev_get_ppaf(const struct nvm_dev *dev);
+
+/**
+ * Returns the ppa-format mask of the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @return On success, ppa-format mask is returned
+ *
+ */
+const struct nvm_spec_ppaf_nand_mask *nvm_dev_get_ppaf_mask(const struct nvm_dev *dev);
+
+/**
+ * Returns the 'meta-mode' of the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @return On success, meta-mode is returned
+ */
+int nvm_dev_get_meta_mode(const struct nvm_dev *dev);
+
+/**
+ * Set the default 'meta-mode' of the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @returns On success, 0 is returned. On error, -1 is returned and errno set to
+ * indicate the error.
+ */
 int nvm_dev_set_meta_mode(struct nvm_dev *dev, int meta_mode);
 
 /**
  * Returns the maximum number of addresses to use when sending erases to device.
  * That is, when invoking nvm_addr_erase.
  *
- * @param dev The device to obtain maximum for
+ * @param dev Device handle obtained with `nvm_dev_open`
  */
-int nvm_dev_get_erase_naddrs_max(struct nvm_dev *dev);
+int nvm_dev_get_erase_naddrs_max(const struct nvm_dev *dev);
 
 /**
  * Returns whether caching is enabled for bad-block-tables on the device.
@@ -396,31 +686,38 @@ int nvm_dev_get_erase_naddrs_max(struct nvm_dev *dev);
  * 0 = cache disabled
  * 1 = cache enabled
  *
- * @param dev The device to obtain maximum for
+ * @param dev Device handle obtained with `nvm_dev_open`
  */
-int nvm_dev_get_bbts_cached(struct nvm_dev *dev);
+int nvm_dev_get_bbts_cached(const struct nvm_dev *dev);
+
+/**
+ * Returns the backend identifier associated with the given device
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ */
+int nvm_dev_get_be_id(const struct nvm_dev *dev);
 
 /**
  * Set the maximum number of addresses to use for reads, that is, when invoking
  * nvm_addr_read
  *
- * @param dev The device to obtain maximum for
+ * @param dev Device handle obtained with `nvm_dev_open`
  */
-int nvm_dev_get_read_naddrs_max(struct nvm_dev *dev);
+int nvm_dev_get_read_naddrs_max(const struct nvm_dev *dev);
 
 /**
  * Set the maximum number of addresses to use for writes, that is, when invoking
  * nvm_addr_write
  *
- * @param dev The device to obtain maximum for
+ * @param dev Device handle obtained with `nvm_dev_open`
  */
-int nvm_dev_get_write_naddrs_max(struct nvm_dev *dev);
+int nvm_dev_get_write_naddrs_max(const struct nvm_dev *dev);
 
 /**
  * Set the maximum number of addresses to use for erases, that is, when invoking
  * nvm_addr_erase
  *
- * @param dev The device to set maximum for
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param naddrs The maximum
  *
  * @returns 0 on success, -1 on error and errno set to indicate the error.
@@ -430,11 +727,8 @@ int nvm_dev_set_erase_naddrs_max(struct nvm_dev *dev, int naddrs);
 /**
  * Sets whether retrieval and changes to bad-block-tables should be cached.
  *
- * @note
- * 0 = cache disabled
- * 1 = cache enabled
- *
- * @param dev The device to bad-block-table caching for
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @param bbts_cached 1 = cache enabled, 0 = cache disabled
  *
  * @returns 0 on success, -1 on error and errno set to indicate the error.
  */
@@ -444,7 +738,7 @@ int nvm_dev_set_bbts_cached(struct nvm_dev *dev, int bbts_cached);
  * Set the maximum number of addresses to use for erases, that is, when invoking
  * nvm_addr_erase.
  *
- * @param dev The device to set maximum for
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param naddrs The maximum
  *
  * @returns 0 on success, -1 on error and errno set to indicate the error.
@@ -455,7 +749,7 @@ int nvm_dev_set_read_naddrs_max(struct nvm_dev *dev, int naddrs);
  * Set the maximum number of addresses to use for erases, that is, when invoking
  * nvm_addr_erase.
  *
- * @param dev The device to set maximum for
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param naddrs The maximum
  *
  * @returns 0 on success, -1 on error and errno set to indicate the error.
@@ -468,17 +762,17 @@ int nvm_dev_set_write_naddrs_max(struct nvm_dev *dev, int naddrs);
  * @note
  * See struct nvm_geo for the specifics of the returned geometry
  *
- * @param dev The device to obtain the geometry of
+ * @param dev Device handle obtained with `nvm_dev_open`
  *
  * @returns The geometry (struct nvm_geo) of given device handle
  */
-const struct nvm_geo *nvm_dev_get_geo(struct nvm_dev *dev);
+const struct nvm_geo *nvm_dev_get_geo(const struct nvm_dev *dev);
 
 /**
  * Allocate a buffer aligned to match the given geometry
  *
  * @note
- * nbytes must be greater than zero and a multiple of geo.vpage_nbytes
+ * nbytes must be greater than zero and a multiple of minimal granularity
  *
  * @param geo The geometry to get alignment information from
  * @param nbytes The size of the allocated buffer in bytes
@@ -505,6 +799,28 @@ void nvm_buf_fill(char *buf, size_t nbytes);
 void nvm_buf_pr(char *buf, size_t nbytes);
 
 /**
+ * Write content of buffer into file
+ *
+ * @param buf Pointer to the buffer
+ * @param nbytes Size of buf
+ * @param path Destination where buffer will be dumped to
+ *
+ * @returns 0 on success, -1 on error and errno set to indicate the error.
+ */
+int nvm_buf_to_file(char *buf, size_t nbytes, const char *path);
+
+/**
+ * Read content of file into buffer
+ *
+ * @param buf Pointer to the buffer
+ * @param nbytes Size of buf
+ * @param path Source to read from
+ *
+ * @returns 0 on success, -1 on error and errno set to indicate the error.
+ */
+int nvm_buf_from_file(char *buf, size_t nbytes, const char *path);
+
+/**
  * Erase nvm at given addresses
  *
  * @note
@@ -512,7 +828,7 @@ void nvm_buf_pr(char *buf, size_t nbytes);
  * contrast to `nvm_addr_mark`, `nvm_addr_write`, and `nvm_addr_read` for which
  * the address is interpreted as a sector address.
  *
- * @param dev Handle to the device on which to erase
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addrs Array of memory address
  * @param naddrs Length of array of memory addresses
  * @param flags Access mode
@@ -532,11 +848,12 @@ ssize_t nvm_addr_erase(struct nvm_dev *dev, struct nvm_addr addrs[], int naddrs,
  * contrast to nvm_addr_mark and nvm_addr_erase for which the address is
  * interpreted as a block address.
  *
- * @param dev Handle to the device on which to erase
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addrs Array of memory address
  * @param naddrs Length of array of memory addresses
  * @param buf The buffer which content to write, must be aligned to device
- *            geo.vpage_nbytes and size equal to `naddrs * geo.nbytes`
+ *            geometry of minimal write granularity and size equal to
+ *            `naddrs * geo.nbytes`
  * @param meta Buffer containing metadata, must be of size equal to device
  *             `naddrs * geo.meta_nbytes`
  * @param flags Access mode
@@ -557,11 +874,12 @@ ssize_t nvm_addr_write(struct nvm_dev *dev, struct nvm_addr addrs[], int naddrs,
  * contrast to `nvm_addr_mark` and `nvm_addr_erase` for which the address is
  * interpreted as a block address.
  *
- * @param dev Handle to the device on which to erase
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addrs List of memory address
  * @param naddrs Length of array of memory addresses
  * @param buf Buffer to store result of read into, must be aligned to device
- *            geo.vpage_nbytes and size equal to `naddrs * geo.nbytes`
+ *            granularity min read and size equal to `naddrs *
+ *            geo.sector_nbytes`
  * @param meta Buffer to store content of metadata, must be of size equal to
  *             device `naddrs * geo.meta_nbytes`
  * @param flags Access mode
@@ -586,7 +904,7 @@ int nvm_addr_check(struct nvm_addr addr, const struct nvm_geo *geo);
 /**
  * Converts a given physical address generic-format to device-format
  *
- * @param dev The device which address format to convert to
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addr The physical address on generic-format to convert
  * @return Physical address on device-format
  */
@@ -595,16 +913,34 @@ uint64_t nvm_addr_gen2dev(struct nvm_dev *dev, struct nvm_addr addr);
 /**
  * Converts a given physical address on device-format to generic-format
  *
- * @param dev The device which address format to convert from
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addr The physical address on device-format to convert
  * @return Physical address on generic-format
  */
 struct nvm_addr nvm_addr_dev2gen(struct nvm_dev *dev, uint64_t addr);
 
 /**
+ * Converts a given physical address on device-format to lba-format
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @param addr The physical address on device-format to convert
+ * @return Physical address on lba-format
+ */
+uint64_t nvm_addr_dev2lba(struct nvm_dev *dev, uint64_t addr);
+
+/**
+ * Converts a given physical address on device-format to lba-offset-format
+ *
+ * @param dev Device handle obtained with `nvm_dev_open`
+ * @param addr The physical address on device-format to convert
+ * @return Physical address on lba-offset-format
+ */
+uint64_t nvm_addr_dev2off(struct nvm_dev *dev, uint64_t addr);
+
+/**
  * Converts a given physical address on generic-format to byte offset
  *
- * @param dev Handle to device which mapping information to use
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addr The physical address on generic-format to convert
  * @return Logical address as byte offset
  */
@@ -613,7 +949,7 @@ uint64_t nvm_addr_gen2off(struct nvm_dev *dev, struct nvm_addr addr);
 /**
  * Converts a given byte offset to physical address on generic-format
  *
- * @param dev Handle to device which mapping information to use
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param off Logical address as byte offset to convert
  * @return Physical address on generic-format
  */
@@ -622,7 +958,7 @@ struct nvm_addr nvm_addr_off2gen(struct nvm_dev *dev, uint64_t off);
 /**
  * Converts a given physical address on generic-format to LBA offset
  *
- * @param dev Handle to device which mapping information to use
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addr The physical address on generic-format to convert
  * @return Logical address as LBA offset
  */
@@ -631,7 +967,7 @@ uint64_t nvm_addr_gen2lba(struct nvm_dev *dev, struct nvm_addr addr);
 /**
  * Converts a given LBA offset to physical address on generic-format
  *
- * @param dev Handle to device which mapping information to use
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param off Logical address as LBA offset to convert
  * @return Physical address on generic-format
  */
@@ -652,7 +988,7 @@ void nvm_addr_prn(struct nvm_addr *addr, unsigned int naddrs);
 /**
  * Allocate a virtual block, spanning a given set of physical blocks
  *
- * @param dev The device on which the virtual block resides
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param addrs Set of block-addresses forming the virtual block
  * @param naddrs The number of addresses in the address-set
  *
@@ -665,7 +1001,7 @@ struct nvm_vblk *nvm_vblk_alloc(struct nvm_dev *dev, struct nvm_addr addrs[],
 /**
  * Allocate a virtual block (spanning planes, channels, and LUNs)
  *
- * @param dev The device on which the virtual block resides
+ * @param dev Device handle obtained with `nvm_dev_open`
  * @param ch_bgn Beginning of the channel span, as inclusive index
  * @param ch_end End of the channel span, as inclusive index
  * @param lun_bgn Beginning of the LUN span, as inclusive index
@@ -704,7 +1040,8 @@ ssize_t nvm_vblk_erase(struct nvm_vblk *vblk);
  * @note
  * buf must be aligned to device geometry, see struct nvm_geo and nvm_buf_alloc
  * count must be a multiple of min-size, see struct nvm_geo
- * do not mix use of nvm_vblk_pwrite with nvm_vblk_write on the same virtual block
+ * do not mix use of nvm_vblk_pwrite with nvm_vblk_write on the same virtual
+ * block
  *
  * @param vblk The virtual block to write to
  * @param buf Write content starting at buf
@@ -722,7 +1059,8 @@ ssize_t nvm_vblk_write(struct nvm_vblk *vblk, const void *buf, size_t count);
  * buf must be aligned to device geometry, see struct nvm_geo and nvm_buf_alloc
  * count must be a multiple of min-size, see struct nvm_geo
  * offset must be a multiple of min-size, see struct nvm_geo
- * do not mix use of nvm_vblk_pwrite with nvm_vblk_write on the same virtual block
+ * do not mix use of nvm_vblk_pwrite with nvm_vblk_write on the same virtual
+ * block
  *
  * @param vblk The virtual block to write to
  * @param buf Write content starting at buf
@@ -757,7 +1095,7 @@ ssize_t nvm_vblk_read(struct nvm_vblk *vblk, void *buf, size_t count);
  * Read from a virtual block at given offset
  */
 ssize_t nvm_vblk_pread(struct nvm_vblk *vblk, void *buf, size_t count,
-                       size_t offset);
+		       size_t offset);
 
 /**
  * Retrieve the device associated with the given virtual block
