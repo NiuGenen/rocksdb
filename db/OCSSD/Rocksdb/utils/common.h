@@ -1,6 +1,8 @@
 #ifndef YWJ_OCSSD_COMMON_H
 #define YWJ_OCSSD_COMMON_H
 
+#include "oc_exception.hpp"
+
 #include <string>
 
 namespace rocksdb {
@@ -59,7 +61,7 @@ const char* BinStr(XType num, std::string& str)
 }
 
 
-inline int bitmap2str(uint32_t bitmap, char *buf)
+inline int bitmap2str(uint32_t bitmap, char *buf) //this is reversed string.
 {
 	for (int i = 0; i < 32; i++) {
 		buf[32 - i - 1] = bitmap & (1 << i) ? '#' : '0';
@@ -93,7 +95,12 @@ inline int bitmap_ntz32(uint32_t x)
 }
 
 /*
- * get an empty slot(bit == 0) to use
+ * get an empty slot(bit == 0) to use 
+ *  
+ * numerical value 	|2^31                 2^0| 
+ * digit bit        |high                 low|  math_digit
+ * varieble         |-- -- -- ...........  --|  32bits uint32_t
+ * slot_id          |31					    0|
  */
 inline int bitmap_get_slot(uint32_t bitmap)
 {
@@ -122,6 +129,30 @@ inline void bitmap_unset(uint32_t *bitmap, int idx)
 	*bitmap = *bitmap & (~(1 << idx));
 }
 
+
+/*
+ * slot bit == 0: empty(unset), usable 
+ *          == 1: set, not usable
+ * buf index: 0                           1
+ * 			 |-- -- -- ...........  --|  |-- -- -- ...........  --|
+ * 			 |31				     0|  |63                    32|
+ */
+class oc_bitmap {
+public:
+	oc_bitmap(int counts) throw(oc_excpetion);
+	int get_slot();									//find an empty slot_id to use.
+	int set_slot(int slot_id);						//
+	int unset_slot(int slot_id);
+	bool slot_empty(int slot_id);
+
+	void info();									//print info
+	void printbuf();								//
+private:
+	int bits;
+	int used_bits;
+	int buf_len;
+	uint32_t *buf;
+};
 
 
 

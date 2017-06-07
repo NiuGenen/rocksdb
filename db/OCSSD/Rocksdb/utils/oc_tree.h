@@ -160,20 +160,25 @@ private:
 	size_t usize_[4];
 };
 
-struct config{
-	const struct nvm_geo * geo_;
-	struct blk_addr_handle * bah_;
-	int tree_num_;
-};
-
 void addr_init(class oc_ssd *ssd);
 void addr_release();
 
 } // namespace addr
 
+
+
+
 /*Tree's logic goes here*/
 typedef uint32_t file_meta_number_t;
 
+typedef struct meta_block_area {
+	addr::blk_addr_handle * meta_bh;
+	addr::blk_addr st_blk_addr;
+	int counts;
+
+	nvm_addr *addr_tbl;
+
+}meta_block_area_t;
 
 
 

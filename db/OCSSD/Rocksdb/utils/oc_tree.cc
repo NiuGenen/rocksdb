@@ -371,15 +371,6 @@ void blk_addr_handle::PrTitleMask(struct blk_addr *addr)
 	}
 }
 
-struct config *kConfig;
-void addr_init(class oc_ssd *ssd)
-{
-}
-void addr_release()
-{
-}
-
-
 } // namespace addr
 
 /*Tree's logic goes here*/
