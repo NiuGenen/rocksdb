@@ -175,9 +175,23 @@ typedef struct meta_block_area {
 	addr::blk_addr_handle * meta_bh;
 	addr::blk_addr st_blk_addr;
 	int counts;
+	int obj_size;
+	nvm_addr *addr_tbl;			//
 
-	nvm_addr *addr_tbl;
+	int acblk_counts; 			//active block
+	int *acblk_id;
+	int pg_counts_p_acblk;		//active page per active block
+	int *pg_id;
 
+
+
+	oc_bitmap *l0_bitmap_4_blk_usage; 	//one of <@counts>-bits-bitmap
+	oc_bitmap *l1_bitmap_4_ac_blk;      //<@acblk_counts> of <@geo->npages>-bits-bitmap		
+	oc_bitmap *l2_bitmap_4_ac_pg;       //<acpg_counts_per_acblk * acblk_counts> of <pg_size/obj_size>-bitmap
+
+	oc_bitmap *bitmap_4_obj_p_blk;		//<counts> of <blk_size/obj_size>-bits-bitmap
+
+	void *obj_addr_tbl;
 }meta_block_area_t;
 
 
