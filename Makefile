@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/work/mnt/1/OpenChannelSSD/src/rocksdb
+CMAKE_SOURCE_DIR = /home/workvm/mnt_host/rocksdb
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/work/mnt/1/OpenChannelSSD/src/rocksdb
+CMAKE_BINARY_DIR = /home/workvm/mnt_host/rocksdb
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -120,9 +120,9 @@ test/fast: test
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/work/mnt/1/OpenChannelSSD/src/rocksdb/CMakeFiles /home/work/mnt/1/OpenChannelSSD/src/rocksdb/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/workvm/mnt_host/rocksdb/CMakeFiles /home/workvm/mnt_host/rocksdb/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/work/mnt/1/OpenChannelSSD/src/rocksdb/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/workvm/mnt_host/rocksdb/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -1736,6 +1736,32 @@ table_test/fast:
 .PHONY : table_test/fast
 
 #=============================================================================
+# Target rules for targets named test_addr
+
+# Build rule for target.
+test_addr: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 test_addr
+.PHONY : test_addr
+
+# fast build rule for target.
+test_addr/fast:
+	$(MAKE) -f CMakeFiles/test_addr.dir/build.make CMakeFiles/test_addr.dir/build
+.PHONY : test_addr/fast
+
+#=============================================================================
+# Target rules for targets named test_tree
+
+# Build rule for target.
+test_tree: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 test_tree
+.PHONY : test_tree
+
+# fast build rule for target.
+test_tree/fast:
+	$(MAKE) -f CMakeFiles/test_tree.dir/build.make CMakeFiles/test_tree.dir/build
+.PHONY : test_tree/fast
+
+#=============================================================================
 # Target rules for targets named testharness
 
 # Build rule for target.
@@ -1799,19 +1825,6 @@ transaction_test: cmake_check_build_system
 transaction_test/fast:
 	$(MAKE) -f CMakeFiles/transaction_test.dir/build.make CMakeFiles/transaction_test.dir/build
 .PHONY : transaction_test/fast
-
-#=============================================================================
-# Target rules for targets named tree_test
-
-# Build rule for target.
-tree_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 tree_test
-.PHONY : tree_test
-
-# fast build rule for target.
-tree_test/fast:
-	$(MAKE) -f CMakeFiles/tree_test.dir/build.make CMakeFiles/tree_test.dir/build
-.PHONY : tree_test/fast
 
 #=============================================================================
 # Target rules for targets named ttl_test
@@ -2541,56 +2554,80 @@ db/OCSSD/Rocksdb/utils/common.cc.s:
 	$(MAKE) -f CMakeFiles/rocksdb-shared.dir/build.make CMakeFiles/rocksdb-shared.dir/db/OCSSD/Rocksdb/utils/common.cc.s
 .PHONY : db/OCSSD/Rocksdb/utils/common.cc.s
 
-db/OCSSD/Rocksdb/utils/oc_tree.o: db/OCSSD/Rocksdb/utils/oc_tree.cc.o
-.PHONY : db/OCSSD/Rocksdb/utils/oc_tree.o
+db/OCSSD/Rocksdb/utils/fs-core.o: db/OCSSD/Rocksdb/utils/fs-core.cc.o
+.PHONY : db/OCSSD/Rocksdb/utils/fs-core.o
 
 # target to build an object file
-db/OCSSD/Rocksdb/utils/oc_tree.cc.o:
-	$(MAKE) -f CMakeFiles/rocksdb.dir/build.make CMakeFiles/rocksdb.dir/db/OCSSD/Rocksdb/utils/oc_tree.cc.o
-	$(MAKE) -f CMakeFiles/rocksdb-shared.dir/build.make CMakeFiles/rocksdb-shared.dir/db/OCSSD/Rocksdb/utils/oc_tree.cc.o
-.PHONY : db/OCSSD/Rocksdb/utils/oc_tree.cc.o
+db/OCSSD/Rocksdb/utils/fs-core.cc.o:
+	$(MAKE) -f CMakeFiles/rocksdb.dir/build.make CMakeFiles/rocksdb.dir/db/OCSSD/Rocksdb/utils/fs-core.cc.o
+	$(MAKE) -f CMakeFiles/rocksdb-shared.dir/build.make CMakeFiles/rocksdb-shared.dir/db/OCSSD/Rocksdb/utils/fs-core.cc.o
+.PHONY : db/OCSSD/Rocksdb/utils/fs-core.cc.o
 
-db/OCSSD/Rocksdb/utils/oc_tree.i: db/OCSSD/Rocksdb/utils/oc_tree.cc.i
-.PHONY : db/OCSSD/Rocksdb/utils/oc_tree.i
+db/OCSSD/Rocksdb/utils/fs-core.i: db/OCSSD/Rocksdb/utils/fs-core.cc.i
+.PHONY : db/OCSSD/Rocksdb/utils/fs-core.i
 
 # target to preprocess a source file
-db/OCSSD/Rocksdb/utils/oc_tree.cc.i:
-	$(MAKE) -f CMakeFiles/rocksdb.dir/build.make CMakeFiles/rocksdb.dir/db/OCSSD/Rocksdb/utils/oc_tree.cc.i
-	$(MAKE) -f CMakeFiles/rocksdb-shared.dir/build.make CMakeFiles/rocksdb-shared.dir/db/OCSSD/Rocksdb/utils/oc_tree.cc.i
-.PHONY : db/OCSSD/Rocksdb/utils/oc_tree.cc.i
+db/OCSSD/Rocksdb/utils/fs-core.cc.i:
+	$(MAKE) -f CMakeFiles/rocksdb.dir/build.make CMakeFiles/rocksdb.dir/db/OCSSD/Rocksdb/utils/fs-core.cc.i
+	$(MAKE) -f CMakeFiles/rocksdb-shared.dir/build.make CMakeFiles/rocksdb-shared.dir/db/OCSSD/Rocksdb/utils/fs-core.cc.i
+.PHONY : db/OCSSD/Rocksdb/utils/fs-core.cc.i
 
-db/OCSSD/Rocksdb/utils/oc_tree.s: db/OCSSD/Rocksdb/utils/oc_tree.cc.s
-.PHONY : db/OCSSD/Rocksdb/utils/oc_tree.s
+db/OCSSD/Rocksdb/utils/fs-core.s: db/OCSSD/Rocksdb/utils/fs-core.cc.s
+.PHONY : db/OCSSD/Rocksdb/utils/fs-core.s
 
 # target to generate assembly for a file
-db/OCSSD/Rocksdb/utils/oc_tree.cc.s:
-	$(MAKE) -f CMakeFiles/rocksdb.dir/build.make CMakeFiles/rocksdb.dir/db/OCSSD/Rocksdb/utils/oc_tree.cc.s
-	$(MAKE) -f CMakeFiles/rocksdb-shared.dir/build.make CMakeFiles/rocksdb-shared.dir/db/OCSSD/Rocksdb/utils/oc_tree.cc.s
-.PHONY : db/OCSSD/Rocksdb/utils/oc_tree.cc.s
+db/OCSSD/Rocksdb/utils/fs-core.cc.s:
+	$(MAKE) -f CMakeFiles/rocksdb.dir/build.make CMakeFiles/rocksdb.dir/db/OCSSD/Rocksdb/utils/fs-core.cc.s
+	$(MAKE) -f CMakeFiles/rocksdb-shared.dir/build.make CMakeFiles/rocksdb-shared.dir/db/OCSSD/Rocksdb/utils/fs-core.cc.s
+.PHONY : db/OCSSD/Rocksdb/utils/fs-core.cc.s
 
-db/OCSSD/Rocksdb/utils/tree_test.o: db/OCSSD/Rocksdb/utils/tree_test.cc.o
-.PHONY : db/OCSSD/Rocksdb/utils/tree_test.o
+db/OCSSD/Rocksdb/utils/test_addr.o: db/OCSSD/Rocksdb/utils/test_addr.cc.o
+.PHONY : db/OCSSD/Rocksdb/utils/test_addr.o
 
 # target to build an object file
-db/OCSSD/Rocksdb/utils/tree_test.cc.o:
-	$(MAKE) -f CMakeFiles/tree_test.dir/build.make CMakeFiles/tree_test.dir/db/OCSSD/Rocksdb/utils/tree_test.cc.o
-.PHONY : db/OCSSD/Rocksdb/utils/tree_test.cc.o
+db/OCSSD/Rocksdb/utils/test_addr.cc.o:
+	$(MAKE) -f CMakeFiles/test_addr.dir/build.make CMakeFiles/test_addr.dir/db/OCSSD/Rocksdb/utils/test_addr.cc.o
+.PHONY : db/OCSSD/Rocksdb/utils/test_addr.cc.o
 
-db/OCSSD/Rocksdb/utils/tree_test.i: db/OCSSD/Rocksdb/utils/tree_test.cc.i
-.PHONY : db/OCSSD/Rocksdb/utils/tree_test.i
+db/OCSSD/Rocksdb/utils/test_addr.i: db/OCSSD/Rocksdb/utils/test_addr.cc.i
+.PHONY : db/OCSSD/Rocksdb/utils/test_addr.i
 
 # target to preprocess a source file
-db/OCSSD/Rocksdb/utils/tree_test.cc.i:
-	$(MAKE) -f CMakeFiles/tree_test.dir/build.make CMakeFiles/tree_test.dir/db/OCSSD/Rocksdb/utils/tree_test.cc.i
-.PHONY : db/OCSSD/Rocksdb/utils/tree_test.cc.i
+db/OCSSD/Rocksdb/utils/test_addr.cc.i:
+	$(MAKE) -f CMakeFiles/test_addr.dir/build.make CMakeFiles/test_addr.dir/db/OCSSD/Rocksdb/utils/test_addr.cc.i
+.PHONY : db/OCSSD/Rocksdb/utils/test_addr.cc.i
 
-db/OCSSD/Rocksdb/utils/tree_test.s: db/OCSSD/Rocksdb/utils/tree_test.cc.s
-.PHONY : db/OCSSD/Rocksdb/utils/tree_test.s
+db/OCSSD/Rocksdb/utils/test_addr.s: db/OCSSD/Rocksdb/utils/test_addr.cc.s
+.PHONY : db/OCSSD/Rocksdb/utils/test_addr.s
 
 # target to generate assembly for a file
-db/OCSSD/Rocksdb/utils/tree_test.cc.s:
-	$(MAKE) -f CMakeFiles/tree_test.dir/build.make CMakeFiles/tree_test.dir/db/OCSSD/Rocksdb/utils/tree_test.cc.s
-.PHONY : db/OCSSD/Rocksdb/utils/tree_test.cc.s
+db/OCSSD/Rocksdb/utils/test_addr.cc.s:
+	$(MAKE) -f CMakeFiles/test_addr.dir/build.make CMakeFiles/test_addr.dir/db/OCSSD/Rocksdb/utils/test_addr.cc.s
+.PHONY : db/OCSSD/Rocksdb/utils/test_addr.cc.s
+
+db/OCSSD/Rocksdb/utils/test_tree.o: db/OCSSD/Rocksdb/utils/test_tree.cc.o
+.PHONY : db/OCSSD/Rocksdb/utils/test_tree.o
+
+# target to build an object file
+db/OCSSD/Rocksdb/utils/test_tree.cc.o:
+	$(MAKE) -f CMakeFiles/test_tree.dir/build.make CMakeFiles/test_tree.dir/db/OCSSD/Rocksdb/utils/test_tree.cc.o
+.PHONY : db/OCSSD/Rocksdb/utils/test_tree.cc.o
+
+db/OCSSD/Rocksdb/utils/test_tree.i: db/OCSSD/Rocksdb/utils/test_tree.cc.i
+.PHONY : db/OCSSD/Rocksdb/utils/test_tree.i
+
+# target to preprocess a source file
+db/OCSSD/Rocksdb/utils/test_tree.cc.i:
+	$(MAKE) -f CMakeFiles/test_tree.dir/build.make CMakeFiles/test_tree.dir/db/OCSSD/Rocksdb/utils/test_tree.cc.i
+.PHONY : db/OCSSD/Rocksdb/utils/test_tree.cc.i
+
+db/OCSSD/Rocksdb/utils/test_tree.s: db/OCSSD/Rocksdb/utils/test_tree.cc.s
+.PHONY : db/OCSSD/Rocksdb/utils/test_tree.s
+
+# target to generate assembly for a file
+db/OCSSD/Rocksdb/utils/test_tree.cc.s:
+	$(MAKE) -f CMakeFiles/test_tree.dir/build.make CMakeFiles/test_tree.dir/db/OCSSD/Rocksdb/utils/test_tree.cc.s
+.PHONY : db/OCSSD/Rocksdb/utils/test_tree.cc.s
 
 db/builder.o: db/builder.cc.o
 .PHONY : db/builder.o
@@ -11028,12 +11065,13 @@ help:
 	@echo "... table_reader_bench"
 	@echo "... table_test"
 	@echo "... test"
+	@echo "... test_addr"
+	@echo "... test_tree"
 	@echo "... testharness"
 	@echo "... testutillib"
 	@echo "... thread_list_test"
 	@echo "... thread_local_test"
 	@echo "... transaction_test"
-	@echo "... tree_test"
 	@echo "... ttl_test"
 	@echo "... version_builder_test"
 	@echo "... version_edit_test"
@@ -11108,12 +11146,15 @@ help:
 	@echo "... db/OCSSD/Rocksdb/utils/common.o"
 	@echo "... db/OCSSD/Rocksdb/utils/common.i"
 	@echo "... db/OCSSD/Rocksdb/utils/common.s"
-	@echo "... db/OCSSD/Rocksdb/utils/oc_tree.o"
-	@echo "... db/OCSSD/Rocksdb/utils/oc_tree.i"
-	@echo "... db/OCSSD/Rocksdb/utils/oc_tree.s"
-	@echo "... db/OCSSD/Rocksdb/utils/tree_test.o"
-	@echo "... db/OCSSD/Rocksdb/utils/tree_test.i"
-	@echo "... db/OCSSD/Rocksdb/utils/tree_test.s"
+	@echo "... db/OCSSD/Rocksdb/utils/fs-core.o"
+	@echo "... db/OCSSD/Rocksdb/utils/fs-core.i"
+	@echo "... db/OCSSD/Rocksdb/utils/fs-core.s"
+	@echo "... db/OCSSD/Rocksdb/utils/test_addr.o"
+	@echo "... db/OCSSD/Rocksdb/utils/test_addr.i"
+	@echo "... db/OCSSD/Rocksdb/utils/test_addr.s"
+	@echo "... db/OCSSD/Rocksdb/utils/test_tree.o"
+	@echo "... db/OCSSD/Rocksdb/utils/test_tree.i"
+	@echo "... db/OCSSD/Rocksdb/utils/test_tree.s"
 	@echo "... db/builder.o"
 	@echo "... db/builder.i"
 	@echo "... db/builder.s"

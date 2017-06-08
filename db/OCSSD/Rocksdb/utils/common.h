@@ -154,6 +154,11 @@ private:
 	uint32_t *buf;
 };
 
+inline void oc_bitmap::info()
+{
+	printf("usage: %d/%d\n", used_bits, bits);
+}
+
 
 
 } // namespace ocssd

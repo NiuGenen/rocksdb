@@ -4,6 +4,8 @@
 //liblightnvm headers
 #include "../oc_lnvm.h"
 
+#include "oc_exception.hpp"
+
 #include <stdint.h>
 
 namespace rocksdb {
@@ -24,7 +26,7 @@ namespace addr{
 // @ch is changable
 // @stlun & @nluns is fixed
 // this ext_tree's lun range: [stlun, stlun + nluns - 1]
-struct tree_meta {
+struct addr_meta {
     //fields for address-format 
     size_t ch;
     size_t stlun;
@@ -67,7 +69,7 @@ struct blk_addr{
 
 class blk_addr_handle{ // a handle should attach to a tree.
 public:
-	blk_addr_handle(struct nvm_geo const * g, struct tree_meta const * tm);
+	blk_addr_handle(struct nvm_geo const *g, struct addr_meta const *tm);
 	~blk_addr_handle();
 
 	enum{
@@ -82,6 +84,7 @@ public:
 		CalcOF = 7			//calculation: overflow/underflow occur
 	};
 	
+	struct blk_addr get_lowest();
 	void convert_2_nvm_addr(struct blk_addr *blk_a, struct nvm_addr *nvm_a);
 	int MakeBlkAddr(size_t ch, size_t lun, size_t pl, size_t blk, struct blk_addr* addr);
 	ssize_t GetFieldFromBlkAddr(struct blk_addr const * addr, int field, bool isidx);
@@ -148,7 +151,7 @@ private:
 
 
 	struct nvm_geo const * geo_;
-	struct tree_meta const *tm_; 
+	struct addr_meta const *tm_; 
 	int status_;						//status of last operation. 
 	AddrFormat format_;
 
@@ -160,7 +163,15 @@ private:
 	size_t usize_[4];
 };
 
-void addr_init(class oc_ssd *ssd);
+inline struct blk_addr blk_addr_handle::get_lowest()
+{
+	return lowest;
+}
+
+extern addr_meta *am;
+extern blk_addr_handle **bah;
+extern size_t *mba_blks;
+void addr_init(const nvm_geo *g) throw(ocssd::oc_excpetion);
 void addr_release();
 
 } // namespace addr
@@ -169,33 +180,6 @@ void addr_release();
 
 
 /*Tree's logic goes here*/
-typedef uint32_t file_meta_number_t;
-
-typedef struct meta_block_area {
-	addr::blk_addr_handle * meta_bh;
-	addr::blk_addr st_blk_addr;
-	int counts;
-	int obj_size;
-	nvm_addr *addr_tbl;			//
-
-	int acblk_counts; 			//active block
-	int *acblk_id;
-	int pg_counts_p_acblk;		//active page per active block
-	int *pg_id;
-
-
-
-	oc_bitmap *l0_bitmap_4_blk_usage; 	//one of <@counts>-bits-bitmap
-	oc_bitmap *l1_bitmap_4_ac_blk;      //<@acblk_counts> of <@geo->npages>-bits-bitmap		
-	oc_bitmap *l2_bitmap_4_ac_pg;       //<acpg_counts_per_acblk * acblk_counts> of <pg_size/obj_size>-bitmap
-
-	oc_bitmap *bitmap_4_obj_p_blk;		//<counts> of <blk_size/obj_size>-bits-bitmap
-
-	void *obj_addr_tbl;
-}meta_block_area_t;
-
-
-
 
 struct extent{
 	uint64_t addr_st_buf;
@@ -203,6 +187,9 @@ struct extent{
 	uint32_t free_bitmap;
 	uint32_t junk_bitmap;
 }__attribute__((aligned(8)));		//24B
+
+
+
 
 struct ext_meta_obj{
 	uint32_t free_vblk_num;

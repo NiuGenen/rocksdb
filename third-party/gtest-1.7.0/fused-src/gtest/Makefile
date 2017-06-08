@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/work/mnt/1/OpenChannelSSD/src/rocksdb
+CMAKE_SOURCE_DIR = /home/workvm/mnt_host/rocksdb
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/work/mnt/1/OpenChannelSSD/src/rocksdb
+CMAKE_BINARY_DIR = /home/workvm/mnt_host/rocksdb
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -120,14 +120,14 @@ test/fast: test
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(CMAKE_COMMAND) -E cmake_progress_start /home/work/mnt/1/OpenChannelSSD/src/rocksdb/CMakeFiles /home/work/mnt/1/OpenChannelSSD/src/rocksdb/third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/progress.marks
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/work/mnt/1/OpenChannelSSD/src/rocksdb/CMakeFiles 0
+	cd /home/workvm/mnt_host/rocksdb && $(CMAKE_COMMAND) -E cmake_progress_start /home/workvm/mnt_host/rocksdb/CMakeFiles /home/workvm/mnt_host/rocksdb/third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/progress.marks
+	cd /home/workvm/mnt_host/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/workvm/mnt_host/rocksdb/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/clean
+	cd /home/workvm/mnt_host/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/clean
 .PHONY : clean
 
 # The main clean target
@@ -136,22 +136,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/preinstall
+	cd /home/workvm/mnt_host/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/preinstall
+	cd /home/workvm/mnt_host/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/workvm/mnt_host/rocksdb && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/rule:
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/rule
+	cd /home/workvm/mnt_host/rocksdb && $(MAKE) -f CMakeFiles/Makefile2 third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/rule
 .PHONY : third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/rule
 
 # Convenience name for target.
@@ -160,7 +160,7 @@ gtest: third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/rule
 
 # fast build rule for target.
 gtest/fast:
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(MAKE) -f third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build.make third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build
+	cd /home/workvm/mnt_host/rocksdb && $(MAKE) -f third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build.make third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build
 .PHONY : gtest/fast
 
 gtest-all.o: gtest-all.cc.o
@@ -168,7 +168,7 @@ gtest-all.o: gtest-all.cc.o
 
 # target to build an object file
 gtest-all.cc.o:
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(MAKE) -f third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build.make third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/gtest-all.cc.o
+	cd /home/workvm/mnt_host/rocksdb && $(MAKE) -f third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build.make third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/gtest-all.cc.o
 .PHONY : gtest-all.cc.o
 
 gtest-all.i: gtest-all.cc.i
@@ -176,7 +176,7 @@ gtest-all.i: gtest-all.cc.i
 
 # target to preprocess a source file
 gtest-all.cc.i:
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(MAKE) -f third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build.make third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/gtest-all.cc.i
+	cd /home/workvm/mnt_host/rocksdb && $(MAKE) -f third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build.make third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/gtest-all.cc.i
 .PHONY : gtest-all.cc.i
 
 gtest-all.s: gtest-all.cc.s
@@ -184,7 +184,7 @@ gtest-all.s: gtest-all.cc.s
 
 # target to generate assembly for a file
 gtest-all.cc.s:
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(MAKE) -f third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build.make third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/gtest-all.cc.s
+	cd /home/workvm/mnt_host/rocksdb && $(MAKE) -f third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/build.make third-party/gtest-1.7.0/fused-src/gtest/CMakeFiles/gtest.dir/gtest-all.cc.s
 .PHONY : gtest-all.cc.s
 
 # Help Target
@@ -215,6 +215,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/work/mnt/1/OpenChannelSSD/src/rocksdb && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/workvm/mnt_host/rocksdb && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

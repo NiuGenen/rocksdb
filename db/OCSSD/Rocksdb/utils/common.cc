@@ -39,8 +39,8 @@ std::string& StrAppendInt(std::string& str, int val)
 oc_bitmap::oc_bitmap(int counts) throw(oc_excpetion)
 	: bits(counts), used_bits(0)
 {
-	buf_len = bits >> 5 + 1; 
-	buf = calloc(sizeof(uint32_t), buf_len);
+	buf_len = ((bits >> 5) + 1); 
+	buf = (uint32_t*)calloc(sizeof(uint32_t), buf_len);
 	if (!buf) {
 		throw (oc_excpetion("not enough memory", false));
 	}
@@ -69,7 +69,7 @@ int oc_bitmap::set_slot(int slot_id)
 		return -1;
 	}
 	idx = slot_id >> 5;
-	inner_u32 = slot_id - idx << 5;
+	inner_u32 = slot_id - (idx << 5);
 	bitmap_set(buf + idx, inner_u32);
 	used_bits++;
 	return 0;
@@ -82,7 +82,7 @@ int oc_bitmap::unset_slot(int slot_id)
 		return -1;
 	}
 	idx = slot_id >> 5;
-	inner_u32 = slot_id - idx << 5;
+	inner_u32 = slot_id - (idx << 5);
 	bitmap_unset(buf + idx, inner_u32);
 	used_bits--;
 	return 0;
@@ -95,19 +95,14 @@ bool oc_bitmap::slot_empty(int slot_id)
 		return false;
 	}
 	idx = slot_id >> 5;
-	inner_u32 = slot_id - idx << 5;
+	inner_u32 = slot_id - (idx << 5);
 
 	return (buf[idx] & (1 << inner_u32)) ? false : true ;
 
 }
-void oc_bitmap::info()
-{
-	char tmp[33]; 
-	printf("usage: %d/%d\n", used_bits, bits); 
-
-}
 void oc_bitmap::printbuf()
 {
+	char tmp[33];
 	for (int i = 0; i < buf_len; i++) {
 		bitmap2str(buf[i], tmp);
 		printf("%s", tmp);

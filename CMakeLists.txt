@@ -297,23 +297,15 @@ add_subdirectory(third-party/gtest-1.7.0/fused-src/gtest)
 
 set(SOURCES
         db/OCSSD/Rocksdb/oc_block_manager.cc
-        db/OCSSD/Rocksdb/oc_block_manager.h
         db/OCSSD/Rocksdb/oc_file.cc
-        db/OCSSD/Rocksdb/oc_file.h
         db/OCSSD/Rocksdb/oc_gc.cc
-        db/OCSSD/Rocksdb/oc_gc.h
         db/OCSSD/Rocksdb/oc_options.cc
-        db/OCSSD/Rocksdb/oc_options.h
         db/OCSSD/Rocksdb/oc_page_cache.cc
-        db/OCSSD/Rocksdb/oc_page_cache.h
         db/OCSSD/Rocksdb/oc_rocksdb_block_based_table_builder.cc
-        db/OCSSD/Rocksdb/oc_rocksdb_block_based_table_builder.h
         db/OCSSD/Rocksdb/oc_rocksdb_block_builder.cc
-        db/OCSSD/Rocksdb/oc_rocksdb_block_builder.h
         db/OCSSD/Rocksdb/oc_ssd.cc
-        db/OCSSD/Rocksdb/oc_ssd.h
-	db/OCSSD/Rocksdb/utils/common.cc
-	db/OCSSD/Rocksdb/utils/oc_tree.cc
+	      db/OCSSD/Rocksdb/utils/common.cc
+	      db/OCSSD/Rocksdb/utils/fs-core.cc
         cache/clock_cache.cc
         cache/lru_cache.cc
         cache/sharded_cache.cc
@@ -588,9 +580,10 @@ else()
 endif()
 
 set(TESTS
-	db/OCSSD/Rocksdb/utils/tree_test.cc
-	db/OCSSD/Rocksdb/oc_page_test.cc
-	db/OCSSD/Rocksdb/oc_test.cc
+        db/OCSSD/Rocksdb/utils/test_addr.cc
+	      db/OCSSD/Rocksdb/utils/test_tree.cc
+      	db/OCSSD/Rocksdb/oc_page_test.cc
+      	db/OCSSD/Rocksdb/oc_test.cc
         cache/cache_test.cc
         cache/lru_cache_test.cc
         db/column_family_test.cc

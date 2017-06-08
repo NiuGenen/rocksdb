@@ -1,13 +1,14 @@
-#include "oc_tree.h"
-
+#include "fs-core.h"
 #include "common.h"
+
+#include <malloc.h>
 
 namespace rocksdb {
 namespace ocssd {
 
 namespace addr{
 
-blk_addr_handle::blk_addr_handle(struct nvm_geo const * g, struct tree_meta const * tm)
+blk_addr_handle::blk_addr_handle(struct nvm_geo const * g, struct addr_meta const * tm)
 	: geo_(g), tm_(tm), status_(0), format_()
 {
 	init();
@@ -46,7 +47,7 @@ void blk_addr_handle::init()
 	MakeBlkAddr(tm_->ch, tm_->stlun + tm_->nluns - 1, geo_->nplanes - 1, geo_->nblocks - 1, &highest); 
 }
 
-void convert_2_nvm_addr(struct blk_addr *blk_a, struct nvm_addr *nvm_a)
+void blk_addr_handle::convert_2_nvm_addr(struct blk_addr *blk_a, struct nvm_addr *nvm_a)
 {
 	uint64_t tmp[4];
 	for (int idx = 0; idx < 4; idx++) {
@@ -371,12 +372,125 @@ void blk_addr_handle::PrTitleMask(struct blk_addr *addr)
 	}
 }
 
+addr_meta *am;
+blk_addr_handle **bah;
+size_t *mba_blks; 			//SuperBlock? each channel mba usage.
+static size_t nchs;
+
+void addr_init(const nvm_geo *g) throw(ocssd::oc_excpetion)
+{
+	size_t i;
+	nchs = g->nchannels;
+	am = (addr_meta *)calloc(sizeof(addr_meta), nchs);
+	if (!am) {
+		throw (oc_excpetion("not enough memory", false));
+	}
+
+	mba_blks = (size_t *)calloc(sizeof(size_t), nchs);
+	if (!mba_blks) {
+		addr_release();
+		throw (oc_excpetion("not enough memory", false)); 
+	}
+
+	bah = (blk_addr_handle **)calloc(sizeof(blk_addr_handle *), nchs);
+	if (!bah) {
+		addr_release();
+		throw (oc_excpetion("not enough memory", false));
+	}
+
+	for (i = 0; i < nchs; i++) {
+		am[i].ch = i;
+		am[i].nluns = g->nluns;
+		am[i].stlun = 0;
+
+		try {
+			bah[i] = new blk_addr_handle(g, am + i);
+		} catch (std::bad_alloc&) {
+			addr_release();
+			throw (oc_excpetion("not enough memory", false));
+		}
+	}
+}
+void addr_release()
+{
+	if (am) {
+		free(am);
+	}
+	for (size_t i = 0; i < nchs; i++) {
+		if (bah[i]) {
+			delete bah[i];
+		}
+	}
+	if (bah) {
+		free(bah);
+	}
+	if (mba_blks) {
+		free(mba_blks);
+	}
+}
+
+
 } // namespace addr
 
 /*Tree's logic goes here*/
+typedef struct meta_block_area {
+	const char *mba_name;				
+	int blk_count;
+	int obj_size;
+
+	extent *occ_ext;			//each channel's blocks
+	nvm_addr *addr_tbl;         //for real-time I/O
 
 
+	int acblk_counts;           //active block
+	int *acblk_id;
+	int pg_counts_p_acblk;      //active page per active block
+	int *pg_id;
 
+	oc_bitmap *l0_bitmap_4_blk_usage;   //one of <@counts>-bits-bitmap
+	oc_bitmap *l1_bitmap_4_ac_blk;      //<@acblk_counts> of <@geo->npages>-bits-bitmap
+	oc_bitmap *l2_bitmap_4_ac_pg;       //<acpg_counts_per_acblk * acblk_counts> of <pg_size/obj_size>-bitmap
+
+	oc_bitmap *bitmap_4_obj_p_blk;      //<counts> of <blk_size/obj_size>-bits-bitmap
+
+	void *obj_addr_tbl;					//object address table or "oat"
+}meta_block_area_t; 
+
+void mba_init(meta_block_area_t* mba, 
+	const char *name, int blkcts, int obj_size)
+{
+}
+
+
+//file_meta implementation
+
+typedef uint32_t file_meta_number_t;
+#define file_meta_block_counts 300
+#define file_meta_size_bytes 1024
+
+
+static meta_block_area_t oc_fs_file_meta;
+
+void file_meta_init_oat(void** tblptr, uint32_t entry_counts) throw(oc_excpetion)
+{
+	*tblptr = calloc(sizeof(file_meta_number_t), entry_counts);
+	if (!(*tblptr)) {
+		throw (oc_excpetion("not enough memory", false));
+	}
+}
+
+void file_meta_init_mba(meta_block_area_t* mbaptr, const nvm_geo *g, int st_ch, int ed_ch)
+{
+
+}
+
+void file_meta_info()
+{
+}
+
+void file_meta_usage()
+{
+}
 
 
 

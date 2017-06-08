@@ -1,5 +1,8 @@
 #ifndef YWJ_OCSSD_OC_OPTIONS_H
 #define YWJ_OCSSD_OC_OPTIONS_H
+
+#include <cstddef>  //for size_t
+
 namespace rocksdb {
 namespace ocssd {
 

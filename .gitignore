@@ -1,5 +1,6 @@
 make_config.mk
 
+test_*
 *.a
 *.arc
 *.d

@@ -1,6 +1,8 @@
 #ifndef YWJ_OCSSD_OC_EXCEPTION_HPP
 #define YWJ_OCSSD_OC_EXCEPTION_HPP
 
+#include "oc_exception.hpp"
+
 #include <string>
 #include <cerrno>
 #include <cstring>
