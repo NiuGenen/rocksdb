@@ -168,9 +168,10 @@ inline struct blk_addr blk_addr_handle::get_lowest()
 	return lowest;
 }
 
+
 extern addr_meta *am;
 extern blk_addr_handle **bah;
-extern size_t *mba_blks;
+extern size_t *next_start;
 void addr_init(const nvm_geo *g) throw(ocssd::oc_excpetion);
 void addr_release();
 

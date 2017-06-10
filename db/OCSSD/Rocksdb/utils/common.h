@@ -173,6 +173,7 @@ struct list_wrapper {
 class list_entry_pool {
 public:
 	list_entry_pool();
+	list_entry_pool(int initnum);
 	~list_entry_pool();
 
 	list_wrapper* alloc();
@@ -316,8 +317,6 @@ void list_destroy_to_pool(list_wrapper *listhead, list_entry_pool *pool)
 	list_traverse<list_wrapper_deleter_to_pool>(listhead, &del);
 }
 
-
-
 list_entry_pool::list_entry_pool() : used_(0)
 {
 	num_ = 10;
@@ -325,6 +324,15 @@ list_entry_pool::list_entry_pool() : used_(0)
 		list_push_back(&freelist_, new list_wrapper());
 	}
 }
+
+list_entry_pool::list_entry_pool(int initnum) 
+: num_(initnum), used_(0)
+{
+	for (int i = 0; i < num_; ++i) {
+		list_push_back(&freelist_, new list_wrapper());
+	}
+}
+
 list_entry_pool::~list_entry_pool()
 {
 	list_destroy(&freelist_);
