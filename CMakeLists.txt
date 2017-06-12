@@ -304,8 +304,8 @@ set(SOURCES
         db/OCSSD/Rocksdb/oc_rocksdb_block_based_table_builder.cc
         db/OCSSD/Rocksdb/oc_rocksdb_block_builder.cc
         db/OCSSD/Rocksdb/oc_ssd.cc
-	      db/OCSSD/Rocksdb/utils/common.cc
-	      db/OCSSD/Rocksdb/utils/fs-core.cc
+	db/OCSSD/Rocksdb/utils/common.cc
+	db/OCSSD/Rocksdb/utils/fs-core.cc
         cache/clock_cache.cc
         cache/lru_cache.cc
         cache/sharded_cache.cc

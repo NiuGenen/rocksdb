@@ -97,8 +97,66 @@ int test0()
 	return 0;
 }
 
+void test_addr_ns()
+{
+	nvm_geo g;
+
+	g.nchannels = 4;
+	g.nluns = 8;
+	g.nblocks = 512;
+	g.nplanes = 2;
+	g.npages = 256;
+
+	rocksdb::ocssd::addr::addr_init(&g);
+	rocksdb::ocssd::addr::addr_info();
+}
+
+void test_addr_ns_mba_mngm()
+{
+	nvm_geo g;
+
+	g.nchannels = 4;
+	g.nluns = 8;
+	g.nblocks = 512;
+	g.nplanes = 2;
+	g.npages = 256;
+	g.page_nbytes = 16384;
+
+	nvm_geo_pr(&g);
+	rocksdb::ocssd::addr::addr_init(&g);
+	rocksdb::ocssd::mba_mngm_init();
+	rocksdb::ocssd::addr::addr_next_addr_info();
+
+	rocksdb::ocssd::mba_alloc("test_mba_0", 20, 1024, 0, 3, 8000);
+	rocksdb::ocssd::mba_mngm_info();
+	rocksdb::ocssd::mba_mngm_release();
+
+	rocksdb::ocssd::addr::addr_next_addr_info(); 
+	rocksdb::ocssd::addr::addr_release();
+}
+
+void test_oc_bitmap()
+{
+	int sum = 39, i = 0, x;
+	rocksdb::ocssd::oc_bitmap bm(1024);
+	bm.info();
+	bm.printbuf();
+
+	while (i < sum) {
+		printf("--%d--\n", i);
+		x = bm.get_slot();
+		bm.set_slot(x);
+		if (i % 20 == 0) {
+			bm.unset_slot(x);
+		}
+		bm.info();
+		bm.printbuf();
+		i++;
+	}
+}
+
 int main()
 {
-	test_addr2();
+	test_oc_bitmap();
 	return 0;
 }

@@ -195,12 +195,34 @@ inline list_wrapper* list_insert(list_wrapper *previous, list_wrapper *ptr)
 	return ptr;
 }
 
+struct list_wrapper_deleter {
+	void operator ()(list_wrapper *lentry)
+	{
+		delete lentry;
+	}
+};
 
-list_wrapper* list_push_back(list_wrapper *listhead, list_wrapper *ptr)
-{
-	list_wrapper *prev = listhead->prev_; //the end of list
-	return list_insert(prev, ptr);
-}
+list_wrapper* list_push_back(list_wrapper *listhead, list_wrapper *ptr);
+list_wrapper* list_pop_back(list_wrapper *listhead);
+void list_destroy(list_wrapper *listhead); 
+
+/*
+ * INFO - remove from the original list, and give back to pool
+ * Require - @ptr is generate by @alloc_list_entry_from_pool<ContentType>
+ */
+list_wrapper* list_remove_entry_to_pool(list_wrapper *ptr, list_entry_pool *pool);
+
+void list_destroy_to_pool(list_wrapper *listhead, list_entry_pool *pool); 
+
+struct list_wrapper_deleter_to_pool {
+	list_entry_pool *p;
+	list_wrapper_deleter_to_pool(list_entry_pool *_p) : p(_p) { }
+	void operator ()(list_wrapper *lentry)
+	{
+		list_remove_entry_to_pool(lentry, p);
+	}
+}; 
+
 
 inline list_wrapper* list_remove_entry(list_wrapper *ptr)
 {
@@ -216,11 +238,6 @@ inline ContentType* list_entry_CTPtr(list_wrapper *ptr)
 	return reinterpret_cast<ContentType *>(ptr->ct_);
 }
 
-list_wrapper* list_pop_back(list_wrapper *listhead)
-{
-	list_wrapper *end = listhead->prev_; //the end of list
-	return end == listhead ? NULL : list_remove_entry(end);
-}
 
 
 template<class ContentType>
@@ -248,23 +265,6 @@ list_wrapper* alloc_list_entry_from_pool(ContentType *ct, list_entry_pool *pool)
 }
 
 
-
-/*
- * INFO - remove from the original list, and give back to pool
- * Require - @ptr is generate by @alloc_list_entry_from_pool<ContentType>
- *
- */
-list_wrapper* list_remove_entry_to_pool(list_wrapper *ptr, list_entry_pool *pool)
-{
-	ptr->prev_->next_ = ptr->next_;
-	ptr->next_->prev_ = ptr->prev_;
-
-	pool->dealloc(ptr); //this will let the removed node insert to the "@freelist_ of @pool"
-
-	return ptr;
-}
-
-
 template<class LentryDoer>
 void list_traverse(list_wrapper *listhead, LentryDoer *handlerptr)
 {
@@ -286,82 +286,6 @@ void list_traverse(list_wrapper *listhead, LentryDoer *handlerptr, int i, int *n
 		lentry = tmp;
 	}
 }
-
-struct list_wrapper_deleter {
-	void operator ()(list_wrapper *lentry)
-	{
-		delete lentry;
-	}
-};
-
-
-void list_destroy(list_wrapper *listhead)
-{
-	list_wrapper_deleter del;
-	list_traverse<list_wrapper_deleter>(listhead, &del);
-}
-
-
-struct list_wrapper_deleter_to_pool {
-	list_entry_pool *p;
-	list_wrapper_deleter_to_pool(list_entry_pool *_p) : p(_p) { }
-	void operator ()(list_wrapper *lentry)
-	{
-		list_remove_entry_to_pool(lentry, p);
-	}
-};
-
-void list_destroy_to_pool(list_wrapper *listhead, list_entry_pool *pool)
-{
-	list_wrapper_deleter_to_pool del(pool);
-	list_traverse<list_wrapper_deleter_to_pool>(listhead, &del);
-}
-
-list_entry_pool::list_entry_pool() : used_(0)
-{
-	num_ = 10;
-	for (int i = 0; i < num_; ++i) {
-		list_push_back(&freelist_, new list_wrapper());
-	}
-}
-
-list_entry_pool::list_entry_pool(int initnum) 
-: num_(initnum), used_(0)
-{
-	for (int i = 0; i < num_; ++i) {
-		list_push_back(&freelist_, new list_wrapper());
-	}
-}
-
-list_entry_pool::~list_entry_pool()
-{
-	list_destroy(&freelist_);
-}
-list_wrapper* list_entry_pool::alloc()
-{
-	if (num_ - used_ < 5) {
-		int newnum = num_ * 2;
-		int need = newnum - used_;
-
-		for (int i = 0; i < need; ++i) {
-			list_push_back(&freelist_, new list_wrapper());
-		}
-
-		num_ = newnum;
-	}
-
-	used_++;
-
-	return list_pop_back(&freelist_);
-}
-void list_entry_pool::dealloc(list_wrapper *ptr)
-{
-	list_push_back(&freelist_, ptr);
-	used_--;
-}
-
-
-
 
 
 

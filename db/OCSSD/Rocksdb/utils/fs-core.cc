@@ -1,5 +1,4 @@
 #include "fs-core.h"
-#include "common.h"
 
 #include <malloc.h>
 
@@ -47,6 +46,15 @@ void blk_addr_handle::init()
 	MakeBlkAddr(tm_->ch, tm_->stlun + tm_->nluns - 1, geo_->nplanes - 1, geo_->nblocks - 1, &highest); 
 }
 
+struct blk_addr blk_addr_handle::get_right_edge_addr(struct blk_addr *blk)
+{
+	struct blk_addr ret;
+	ret.__buf = blk->__buf;
+	
+	int bval = (ret.__buf & mask_[format_.blk]) >> lmov_[format_.blk];
+	SetFieldBlkAddr(bval + 1, format_.blk, &ret, true);
+	return ret;
+}
 void blk_addr_handle::convert_2_nvm_addr(struct blk_addr *blk_a, struct nvm_addr *nvm_a)
 {
 	uint64_t tmp[4];
@@ -434,55 +442,78 @@ void addr_release()
 	}
 }
 
+void addr_info()
+{
+	printf("%zu bahs:\n", nchs);
+	for (size_t i = 0; i < nchs; i++) {
+		printf("bah_%zu \n", i );
+		bah[i]->PrInfo();
+	}
+	printf("\n");
+}
+
+void addr_next_addr_info()
+{
+	printf("next_addr:\n"); 
+	for (size_t i = 0; i < nchs; i++) {
+		printf("%4zu ", i);
+	}
+	printf("\n");
+	for (size_t i = 0; i < nchs; i++) {
+		printf("%4zu ", next_start[i]);
+	}
+	printf("\n"); 
+}
+
+void addr_nvm_addr_print(nvm_addr *naddr,bool pr_title, const char* prefix)
+{
+	int i;
+	size_t vals[5];
+	const char *titles[5] = {
+		"ch", "blk", "pl", "lun", "pg"
+	};
+	vals[0] = naddr->g.ch;
+	vals[1] = naddr->g.blk;
+	vals[2] = naddr->g.pl;
+	vals[3] = naddr->g.lun;
+	vals[4] = naddr->g.pg;
+
+	
+	if (pr_title) {
+		printf("%5s", prefix); 
+		for (i = 0; i < 5; i++) {
+			printf("%5s", titles[i]);
+		}
+		printf("\n");
+	}
+
+	printf("%5s", prefix); 
+	for (i = 0; i < 5; i++) {
+		printf("%5zu", vals[i]);
+	}
+	printf("\n"); 
+}
 
 } // namespace addr
 
 /*FS's logic*/
-//mba mngm
-typedef struct mba_extent{
-	size_t stblk;
-	size_t edblk;
-}mba_extent_t;
 
-#define MBA_BM_LVLs 4
-#define MBA_ACTIVE_BLK 4
-#define MBA_ACTIVE_PAGE 1
-typedef struct meta_block_area {
-	const char *mba_name;				
-	int blk_count;
-	int obj_size;
-	int st_ch;					//
-	int ed_ch;
-
-	mba_extent_t *occ_ext;			//each channel's blocks, length = [st_ch, ed_ch]							
-	nvm_addr *blk_addr_tbl;         //for real-time I/O's quick reference
+static mba_mnmg_t mba_region;
+static meta_block_area_t *file_meta_mba;
 
 
-	int acblk_counts;           //active block
-	int *acblk_id;
-	int pg_counts_p_acblk;      //active page per active block
-	int *pg_id;
+void _mba_list_list_destroy();
+void _mba_init_addr_tbl(meta_block_area_t *mbaptr);
+void _mba_init(meta_block_area_t *mbaptr);
+void _mba_release(meta_block_area_t *mbaptr);
+void _mba_init_bitmaps(meta_block_area_t *mbaptr);
 
-	oc_bitmap *bitmaps[MBA_BM_LVLs];   //one of <@counts>-bits-bitmap
-	//oc_bitmap *l1_bitmap_4_ac_blk;      //<@acblk_counts> of <@geo->npages>-bits-bitmap
-	//oc_bitmap *l2_bitmap_4_ac_pg;       //<acpg_counts_per_acblk * acblk_counts> of <pg_size/obj_size>-bitmap
-
-	//oc_bitmap *bitmap_4_obj_p_blk;      //<counts> of <blk_size/obj_size>-bits-bitmap
-
-	void *obj_addr_tbl;						//object address table or "oat"	(NAT)
-}meta_block_area_t; 
-
-typedef struct mba_mnmg {
-	list_wrapper *mba_list;
-}mba_mnmg_t;
-
-mba_mnmg_t mba_region;
 
 /* 
  *  
  *  
  */
-void mba_mngm_init()	//info
+void mba_mngm_init()
 {
 	mba_region.mba_list = new list_wrapper();
 }
@@ -524,57 +555,140 @@ void mba_mngm_release()
  *  
  *  
  */
+
+#define mba_mngm_info_print_blk_addr_tbl
+#define mba_mngm_bitmaps_info
 void mba_mngm_info()
 {
 	list_wrapper *ptr;
+	printf("----mba mngm----\n");
 	for (ptr = mba_region.mba_list->next_; ptr != mba_region.mba_list; ptr = ptr->next_) {
 		mba_info(list_entry_CTPtr<meta_block_area_t>(ptr));
+#ifdef mba_mngm_info_print_blk_addr_tbl
+		mba_pr_blk_addr_tbl(list_entry_CTPtr<meta_block_area_t>(ptr));
+#endif
+#ifdef mba_mngm_bitmaps_info
+		mba_bitmaps_info(list_entry_CTPtr<meta_block_area_t>(ptr));
+#endif
 	}
 }
+#define __init_debug__
 
 
 void _mba_init_addr_tbl(meta_block_area_t *mbaptr)
 {
+	size_t nluns = addr::bah[0]->geo_->nluns;
+	addr::blk_addr *blkas, blkline;
+	int dis_ch = mbaptr->ed_ch - mbaptr->st_ch + 1; // mbaptr->blk_count;
+	int i, tblidx = 0;
+	size_t *idx;
+	int mbaidx;
+	blkas = new addr::blk_addr [dis_ch];
+	idx = new size_t[dis_ch];
+#ifdef __init_debug__
+	printf("----mba init blks----\n");
+#endif
 
+	for (i = mbaptr->st_ch; i <= mbaptr->ed_ch && tblidx < mbaptr->blk_count; i++) 
+	{
+		mbaidx = i - mbaptr->st_ch;
+		idx[mbaidx] = mbaptr->occ_ext[mbaidx].stblk; 
+	}
+
+	for (i = mbaptr->st_ch; i <= mbaptr->ed_ch && tblidx < mbaptr->blk_count; i++) 
+	{
+		mbaidx = i - mbaptr->st_ch;
+		if (idx[mbaidx] == mbaptr->occ_ext[mbaidx].stblk) {
+			blkas[mbaidx] = addr::bah[i]->get_lowest();
+			addr::bah[i]->BlkAddrAdd(idx[mbaidx], &blkas[mbaidx]);
+		}
+		blkline = addr::bah[i]->get_right_edge_addr(&blkas[mbaidx]);
+
+		while (addr::bah[i]->BlkAddrCmp(&blkas[mbaidx], &blkline) < 0 
+			   && idx[mbaidx] <= mbaptr->occ_ext[mbaidx].edblk) {
+#ifdef __init_debug__
+			if (tblidx == 0) {
+				addr::bah[i]->PrBlkAddr(&blkas[mbaidx], true, "");
+			} else {
+				addr::bah[i]->PrBlkAddr(&blkas[mbaidx], false, ""); 
+			}
+#endif
+			addr::bah[i]->convert_2_nvm_addr(&blkas[mbaidx], mbaptr->blk_addr_tbl + tblidx);
+
+			addr::bah[i]->BlkAddrAdd(1, &blkas[mbaidx]);
+			idx[mbaidx]++;
+			tblidx++;
+		}// while
+	}// for
+
+	delete[] idx;
+	delete[] blkas;
+}
+void _mba_init_bitmaps(meta_block_area_t *mbaptr)
+{
+	int i;
+	size_t pg_per_blk = addr::bah[0]->geo_->npages;
+	int ac_pg_sum = mbaptr->acblk_counts * mbaptr->pg_counts_p_acblk;
+	size_t objs_per_pg = addr::bah[0]->geo_->page_nbytes / mbaptr->obj_size;
+	size_t objs_per_blk = objs_per_pg * pg_per_blk;
+
+	mbaptr->bitmaps[0][0] = new oc_bitmap(mbaptr->blk_count);//lvl 0 - 1 bit/blk  for all blocks.
+
+	for (i = 0; i < mbaptr->acblk_counts; i++) {
+		mbaptr->bitmaps[1][i] = new oc_bitmap(pg_per_blk);  //lvl 1 - 1 bit/page for active blocks.
+	}
+	for (i = 0; i < ac_pg_sum; i++) {
+		mbaptr->bitmaps[2][i] = new oc_bitmap(objs_per_pg); //lvl 2 - 1 bit/obj  for active pages.
+	}
+	for (i = 0; i < mbaptr->blk_count; i++) {
+		mbaptr->bitmaps[3][i] = new oc_bitmap(objs_per_blk);	//lvl 4 - 1 bit/obj  for junk bits for all objects.
+	}
 }
 
-
-void _mba_init(meta_block_area_t *mbaptr) //this will setup the blocks layout & other stuff.
+/*
+ * this will setup the blocks layout & other stuff.
+ */
+void _mba_init(meta_block_area_t *mbaptr)
 {
 	int dis_ch = mbaptr->ed_ch - mbaptr->st_ch + 1; //range: [mbaptr->ed_ch, mbaptr->st_ch]
 	int blks = mbaptr->blk_count;
 	int each_ch_blk = blks / dis_ch;
 	int i, iblk;
 
+	/* "extent" for mba-occupied-blocks per channel. */
 	mbaptr->occ_ext = (mba_extent_t *)calloc(sizeof(mba_extent_t), dis_ch);
 
 	for (i = mbaptr->st_ch; i <= mbaptr->ed_ch; i++) {
 		iblk = i == mbaptr->ed_ch ? blks : each_ch_blk;
 
-		mbaptr->occ_ext[i].stblk = next_start[i];
-		mbaptr->occ_ext[i].edblk = next_start[i] + iblk - 1;
+		mbaptr->occ_ext[i - mbaptr->st_ch].stblk = addr::next_start[i];
+		mbaptr->occ_ext[i - mbaptr->st_ch].edblk = addr::next_start[i] + iblk - 1;
 
-		next_start[i] = next_start[i] + iblk; //need lock ?
+		addr::next_start[i] = addr::next_start[i] + iblk; //need lock ?
 		blks -= iblk;
 	}
 
-	//nvm_addr blk_addr_tbl for blocks's quick referencing
+	/* nvm_addr blk_addr_tbl for blocks's quick referencing */
 	mbaptr->blk_addr_tbl = (nvm_addr *)calloc(sizeof(nvm_addr), mbaptr->blk_count);
+	_mba_init_addr_tbl(mbaptr);
 
-	//active blks & pgs
+
+	/* active id array for blks & pgs */
 	mbaptr->acblk_id = (int *)calloc(sizeof(int), mbaptr->acblk_counts); 
-	mbaptr->pg_id = (int *)calloc(sizeof(int), mbaptr->acblk_counts * mbaptr->pg_counts_p_acblk); 
+	mbaptr->pg_id = (int *)calloc(sizeof(int), mbaptr->acblk_counts * mbaptr->pg_counts_p_acblk);
 
+	/* bitmaps */
+	//calloc things...
+	mbaptr->bitmaps[0] = (oc_bitmap **)calloc(sizeof(oc_bitmap *), 1);	                    //lvl 0 - 1 bit/blk  for all blocks.
+	mbaptr->bitmaps[1] = (oc_bitmap **)calloc(sizeof(oc_bitmap *), mbaptr->acblk_counts);	//lvl 1 - 1 bit/page for active blocks.
+	mbaptr->bitmaps[2] = (oc_bitmap **)calloc(sizeof(oc_bitmap *), 
+		mbaptr->acblk_counts * mbaptr->pg_counts_p_acblk);    								//lvl 2 - 1 bit/obj  for active pages.
+	mbaptr->bitmaps[3] = (oc_bitmap **)calloc(sizeof(oc_bitmap *), mbaptr->blk_count);       //lvl 4 - 1
 
-	//bitmaps
-	mbaptr->bitmaps[0] =
-	mbaptr->bitmaps[1]
-	mbaptr->bitmaps[2]
-	mbaptr->bitmaps[3]
+	_mba_init_bitmaps(mbaptr);
 
 	//obj addr tbl or oat
-	
-
+	mbaptr->obj_addr_tbl = NULL; //init by user.
 }
 
 void _mba_release(meta_block_area_t* mbaptr)
@@ -597,7 +711,7 @@ void _mba_release(meta_block_area_t* mbaptr)
 }
 
 meta_block_area_t*  mba_alloc(const char *name,
-	int blkcts, int obj_size, int st_ch, int ed_ch)
+	int blkcts, int obj_size, int st_ch, int ed_ch,int obj_num_max)
 {
 	meta_block_area_t* mba = (meta_block_area_t*)calloc(sizeof(meta_block_area_t), 1);
 	mba->mba_name = name;
@@ -607,13 +721,13 @@ meta_block_area_t*  mba_alloc(const char *name,
 	mba->ed_ch = ed_ch;
 	mba->acblk_counts = MBA_ACTIVE_BLK;
 	mba->pg_counts_p_acblk = MBA_ACTIVE_PAGE;
+	mba->obj_num_max = obj_num_max;
 
 	list_wrapper *mba_list_node = new list_wrapper(mba);
 	list_push_back(mba_region.mba_list, mba_list_node);
 	_mba_init(mba);
+	return mba;
 }
-
-
 
 /* 
  *  
@@ -621,57 +735,110 @@ meta_block_area_t*  mba_alloc(const char *name,
  */
 void mba_info(meta_block_area_t* mbaptr)
 {
-	int i;
+	int i, mbaidx;
 	printf("mba: %s\n", mbaptr->mba_name);
 	printf("blocks: %d\n", mbaptr->blk_count);
 	printf("blks layout:\n");
 
-	for (int i = mbaptr->st_ch; i <= mbaptr->ed_ch; i++) {
-		printf("%d ", i);
+	printf("       "); 
+	for (i = mbaptr->st_ch; i <= mbaptr->ed_ch; i++) {
+		printf("%4d ", i);
+	}
+	printf("\n");
+
+	printf("start  ");
+	for (i = mbaptr->st_ch; i <= mbaptr->ed_ch; i++) {
+		mbaidx = i - mbaptr->st_ch;
+		printf("%4zu ", mbaptr->occ_ext[mbaidx].stblk); 
+	}
+	printf("\n");
+
+	printf("ed     "); 
+	for (i = mbaptr->st_ch; i <= mbaptr->ed_ch; i++) {
+		mbaidx = i - mbaptr->st_ch;
+		printf("%4zu ", mbaptr->occ_ext[mbaidx].edblk);
 	}
 	printf("\n");
 }
 
+void mba_pr_blk_addr_tbl(meta_block_area_t *mbaptr)
+{
+	printf("----blk_addr_tbl----\n");
+	for (int i = 0; i < mbaptr->blk_count; i++) {
+		if (i == 0) {
+			addr::addr_nvm_addr_print(mbaptr->blk_addr_tbl + i, true, ""); 
+		} else {
+			addr::addr_nvm_addr_print(mbaptr->blk_addr_tbl + i, false, ""); 
+		}
+	}
+}
 
+void mba_bitmaps_info(meta_block_area_t *mbaptr)
+{
+	int bm_counts[4] = {
+		1, 
+		mbaptr->acblk_counts, 
+		mbaptr->acblk_counts * mbaptr->pg_counts_p_acblk,
+		mbaptr->blk_count
+	};
 
+	for (int i = 0; i < 4; i++) {
+		printf("LVL:%d (%d)\n", i, bm_counts[i]);
+		for (int j = 0; j < bm_counts[i]; j++) {
+			printf("--%d--\n", j);
+			mbaptr->bitmaps[i][j]->info();
+		}
+	}
+}
 
-
-void mba_set_acblk_counts(int acblk, int pgs_per_blk) // inline
+void mba_pr_bitmaps(meta_block_area_t *mbaptr)
 {
 }
+
+
+ 
+///all communication by obj_number object 
 
 
 
 //file_meta implementation
-
 typedef uint32_t file_meta_number_t;
-#define file_meta_block_counts 300
-#define file_meta_size_bytes 1024
+#define FILE_META_NAME "FileMeta"
+#define FILE_META_BLK_CTS 300
+#define FILE_META_OBJ_SIZE 1024
+#define FILE_META_OBJ_CTS 2000000
 
-
-static meta_block_area_t oc_fs_file_meta;
-
-void file_meta_init_oat(void** tblptr, uint32_t entry_counts) throw(oc_excpetion)
+void* _file_meta_mba_alloc_oat() throw(oc_excpetion)
 {
-	*tblptr = calloc(sizeof(file_meta_number_t), entry_counts);
-	if (!(*tblptr)) {
+	file_meta_number_t *oat = (file_meta_number_t *)calloc(sizeof(file_meta_number_t), FILE_META_OBJ_CTS); //<8MB
+	if (!(*oat)) {
 		throw (oc_excpetion("not enough memory", false));
 	}
+	return reinterpret_cast<void *>(oat);
 }
 
-void file_meta_init_mba(meta_block_area_t* mbaptr, const nvm_geo *g, int st_ch, int ed_ch)
-{
+void file_meta_init()
+{	
+	file_meta_mba = mba_alloc(FILE_META_NAME, FILE_META_BLK_CTS, FILE_META_OBJ_SIZE,
+		0, addr::bah[0]->geo_->nchannels - 1, FILE_META_OBJ_CTS);
+	mba_set_oat(file_meta_mba, _file_meta_mba_alloc_oat());
+}
 
+file_meta_number_t file_meta_alloc_obj_id()
+{
+}
+
+void file_meta_write_by_obj_id()
+{
+}
+
+void file_meta_read_by_obj_id()
+{
 }
 
 void file_meta_info()
 {
 }
-
-void file_meta_usage()
-{
-}
-
 
 
 } // namespace ocssd

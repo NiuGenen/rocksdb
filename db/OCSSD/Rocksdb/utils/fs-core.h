@@ -4,8 +4,10 @@
 //liblightnvm headers
 #include "../oc_lnvm.h"
 
+#include "common.h"
 #include "oc_exception.hpp"
 
+#include "port/port.h"
 #include <stdint.h>
 
 namespace rocksdb {
@@ -65,6 +67,11 @@ struct addr_meta {
 
 struct blk_addr{
 	uint64_t __buf;
+	struct blk_addr& operator = (const struct blk_addr& rhs)
+	{
+		this->__buf = rhs.__buf;
+		return *this;
+	}
 };
 
 class blk_addr_handle{ // a handle should attach to a tree.
@@ -85,7 +92,9 @@ public:
 	};
 	
 	struct blk_addr get_lowest();
+	struct blk_addr get_right_edge_addr(struct blk_addr *blk);
 	void convert_2_nvm_addr(struct blk_addr *blk_a, struct nvm_addr *nvm_a);
+
 	int MakeBlkAddr(size_t ch, size_t lun, size_t pl, size_t blk, struct blk_addr* addr);
 	ssize_t GetFieldFromBlkAddr(struct blk_addr const * addr, int field, bool isidx);
 	ssize_t SetFieldBlkAddr(size_t val, int field, struct blk_addr * addr, bool isidx);
@@ -149,8 +158,9 @@ private:
 	void do_sub(size_t* aos, size_t* v, struct blk_addr *addr);
 	void do_add(size_t* aos, size_t* v, struct blk_addr *addr);
 
-
+public:
 	struct nvm_geo const * geo_;
+private:
 	struct addr_meta const *tm_; 
 	int status_;						//status of last operation. 
 	AddrFormat format_;
@@ -174,13 +184,76 @@ extern blk_addr_handle **bah;
 extern size_t *next_start;
 void addr_init(const nvm_geo *g) throw(ocssd::oc_excpetion);
 void addr_release();
-
+void addr_info();
+void addr_next_addr_info();
+void addr_nvm_addr_print(nvm_addr *naddr, bool pr_title, const char *prefix = "");
 } // namespace addr
 
 
 
 
-/*Tree's logic goes here*/
+/* fs-logic */
+//mba mngm
+typedef struct mba_extent {
+	size_t stblk;
+	size_t edblk;
+}mba_extent_t;
+
+#define MBA_BM_LVLs 4
+#define MBA_ACTIVE_BLK 4
+#define MBA_ACTIVE_PAGE 1
+typedef struct meta_block_area {
+	const char *mba_name;
+	int blk_count;
+	int obj_size;
+	int st_ch;                  //
+	int ed_ch;
+
+	mba_extent_t *occ_ext;      //each channel's blocks, length = [st_ch, ed_ch]
+	nvm_addr *blk_addr_tbl;     //for real-time I/O's quick reference
+
+
+	int acblk_counts;           //active block
+	int *acblk_id;
+	int pg_counts_p_acblk;      //active page per active block
+	int *pg_id;
+
+	oc_bitmap **bitmaps[MBA_BM_LVLs];   //one of <@counts>-bits-bitmap
+										//oc_bitmap *l1_bitmap_4_ac_blk;      //<@acblk_counts> of <@geo->npages>-bits-bitmap
+										//oc_bitmap *l2_bitmap_4_ac_pg;       //<acpg_counts_per_acblk * acblk_counts> of <pg_size/obj_size>-bitmap
+
+	//oc_bitmap *bitmap_4_obj_p_blk;    //<counts> of <blk_size/obj_size>-bits-bitmap
+
+
+	void *obj_addr_tbl;                 //object address table or "oat"	(NAT)
+	int obj_num_max;
+}meta_block_area_t;
+
+typedef struct mba_mnmg {
+	list_wrapper *mba_list;
+}mba_mnmg_t; 
+
+void mba_mngm_init();
+void mba_mngm_dump(meta_block_area_t *mbaptr);
+void mba_mngm_release();
+void mba_mngm_info();
+meta_block_area_t*  mba_alloc(const char *name, int blkcts, int obj_size, int st_ch, int ed_ch, int obj_num_max);
+void mba_info(meta_block_area_t *mbaptr); 
+
+void mba_pr_blk_addr_tbl(meta_block_area_t *mbaptr);
+
+void mba_bitmaps_info(meta_block_area_t *mbaptr);
+void mba_pr_bitmaps(meta_block_area_t *mbaptr);
+
+inline void mba_set_oat(meta_block_area_t *mbaptr, void *oat)
+{
+	mbaptr->obj_addr_tbl = oat;
+}
+inline file_meta_number_t* _file_meta_mba_get_oat()
+{
+	return reinterpret_cast<file_meta_number_t *>(file_meta_mba->obj_addr_tbl);
+}
+
 
 struct extent{
 	uint64_t addr_st_buf;

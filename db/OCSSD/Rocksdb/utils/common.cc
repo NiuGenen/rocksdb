@@ -110,6 +110,91 @@ void oc_bitmap::printbuf()
 	printf("\n");
 }
 
+list_wrapper* list_push_back(list_wrapper *listhead, list_wrapper *ptr)
+{
+	list_wrapper *prev = listhead->prev_; //the end of list
+	return list_insert(prev, ptr);
+}
+list_wrapper* list_pop_back(list_wrapper *listhead)
+{
+	list_wrapper *end = listhead->prev_; //the end of list
+	return end == listhead ? NULL : list_remove_entry(end);
+}
+/*
+ * INFO - remove from the original list, and give back to pool
+ * Require - @ptr is generate by @alloc_list_entry_from_pool<ContentType>
+ *
+ */
+list_wrapper* list_remove_entry_to_pool(list_wrapper *ptr, list_entry_pool *pool)
+{
+	ptr->prev_->next_ = ptr->next_;
+	ptr->next_->prev_ = ptr->prev_;
+
+	pool->dealloc(ptr); //this will let the removed node insert to the "@freelist_ of @pool"
+
+	return ptr;
+}
+
+void list_destroy(list_wrapper *listhead)
+{
+	list_wrapper_deleter del;
+	list_traverse<list_wrapper_deleter>(listhead, &del);
+}
+
+void list_destroy_to_pool(list_wrapper *listhead, list_entry_pool *pool)
+{
+	list_wrapper_deleter_to_pool del(pool);
+	list_traverse<list_wrapper_deleter_to_pool>(listhead, &del);
+}
+
+
+
+list_entry_pool::list_entry_pool() : used_(0)
+{
+	num_ = 10;
+	for (int i = 0; i < num_; ++i) {
+		list_push_back(&freelist_, new list_wrapper());
+	}
+}
+
+list_entry_pool::list_entry_pool(int initnum)
+	: num_(initnum), used_(0)
+{
+	for (int i = 0; i < num_; ++i) {
+		list_push_back(&freelist_, new list_wrapper());
+	}
+}
+
+list_entry_pool::~list_entry_pool()
+{
+	list_destroy(&freelist_);
+}
+list_wrapper* list_entry_pool::alloc()
+{
+	if (num_ - used_ < 5) {
+		int newnum = num_ * 2;
+		int need = newnum - used_;
+
+		for (int i = 0; i < need; ++i) {
+			list_push_back(&freelist_, new list_wrapper());
+		}
+
+		num_ = newnum;
+	}
+
+	used_++;
+
+	return list_pop_back(&freelist_);
+}
+void list_entry_pool::dealloc(list_wrapper *ptr)
+{
+	list_push_back(&freelist_, ptr);
+	used_--;
+}
+
+
+
+
 
 } // namespace ocssd
 } // namespace rocksdb
