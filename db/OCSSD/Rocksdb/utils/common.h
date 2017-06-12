@@ -144,6 +144,7 @@ public:
 	int set_slot(int slot_id);						//
 	int unset_slot(int slot_id);
 	bool slot_empty(int slot_id);
+	void unset_all();
 
 	void info();									//print info
 	void printbuf();								//

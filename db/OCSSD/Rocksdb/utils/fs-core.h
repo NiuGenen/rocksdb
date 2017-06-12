@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "oc_exception.hpp"
+#include "../oc_page_cache.h"
 
 #include "port/port.h"
 #include <stdint.h>
@@ -215,14 +216,20 @@ typedef struct meta_block_area {
 
 	int acblk_counts;           //active block
 	int *acblk_id;
+	rocksdb::port::Mutex acblk_id_lock;
+
 	int pg_counts_p_acblk;      //active page per active block
 	int *pg_id;
+
+	oc_page **buffer; 			//
+
+	rocksdb::port::Mutex pg_id_lock;
 
 	oc_bitmap **bitmaps[MBA_BM_LVLs];   //one of <@counts>-bits-bitmap
 										//oc_bitmap *l1_bitmap_4_ac_blk;      //<@acblk_counts> of <@geo->npages>-bits-bitmap
 										//oc_bitmap *l2_bitmap_4_ac_pg;       //<acpg_counts_per_acblk * acblk_counts> of <pg_size/obj_size>-bitmap
 
-	//oc_bitmap *bitmap_4_obj_p_blk;    //<counts> of <blk_size/obj_size>-bits-bitmap
+										//oc_bitmap *bitmap_4_obj_p_blk;    //<counts> of <blk_size/obj_size>-bits-bitmap
 
 
 	void *obj_addr_tbl;                 //object address table or "oat"	(NAT)
@@ -234,6 +241,7 @@ typedef struct mba_mnmg {
 }mba_mnmg_t; 
 
 void mba_mngm_init();
+void mba_mngm_init_pgp(oc_page_pool *pgp_);
 void mba_mngm_dump(meta_block_area_t *mbaptr);
 void mba_mngm_release();
 void mba_mngm_info();
@@ -249,12 +257,24 @@ inline void mba_set_oat(meta_block_area_t *mbaptr, void *oat)
 {
 	mbaptr->obj_addr_tbl = oat;
 }
+
+//file_meta implementation
+typedef uint32_t file_meta_number_t;
+#define FILE_META_NAME "FileMeta"
+#define FILE_META_BLK_CTS 300
+#define FILE_META_OBJ_SIZE 1024
+#define FILE_META_OBJ_CTS 2000000
+extern meta_block_area_t *file_meta_mba;
+
 inline file_meta_number_t* _file_meta_mba_get_oat()
 {
 	return reinterpret_cast<file_meta_number_t *>(file_meta_mba->obj_addr_tbl);
 }
 
 
+
+
+///
 struct extent{
 	uint64_t addr_st_buf;
 	uint64_t addr_ed_buf;

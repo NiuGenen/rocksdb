@@ -100,6 +100,13 @@ bool oc_bitmap::slot_empty(int slot_id)
 	return (buf[idx] & (1 << inner_u32)) ? false : true ;
 
 }
+void oc_bitmap::unset_all()
+{
+	for (int i = 0; i < buf_len; i++) {
+		buf[i] = 0;
+	}
+}
+
 void oc_bitmap::printbuf()
 {
 	char tmp[33];

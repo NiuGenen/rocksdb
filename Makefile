@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/workvm/mnt_host/rocksdb
+CMAKE_SOURCE_DIR = /home/work/mnt/1/OpenChannelSSD/src/rocksdb
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/workvm/mnt_host/rocksdb
+CMAKE_BINARY_DIR = /home/work/mnt/1/OpenChannelSSD/src/rocksdb
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -120,9 +120,9 @@ test/fast: test
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/workvm/mnt_host/rocksdb/CMakeFiles /home/workvm/mnt_host/rocksdb/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/work/mnt/1/OpenChannelSSD/src/rocksdb/CMakeFiles /home/work/mnt/1/OpenChannelSSD/src/rocksdb/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/workvm/mnt_host/rocksdb/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/work/mnt/1/OpenChannelSSD/src/rocksdb/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
