@@ -212,7 +212,7 @@ typedef struct meta_block_area {
 
 	mba_extent_t *occ_ext;      //each channel's blocks, length = [st_ch, ed_ch]
 	nvm_addr *blk_addr_tbl;     //for real-time I/O's quick reference
-
+	int *st_pg_id;				//for gc use
 
 	int acblk_counts;           //active block
 	int *acblk_id;
@@ -226,12 +226,12 @@ typedef struct meta_block_area {
 	rocksdb::port::Mutex pg_id_lock;
 
 	oc_bitmap **bitmaps[MBA_BM_LVLs];   //one of <@counts>-bits-bitmap
-										//oc_bitmap *l1_bitmap_4_ac_blk;      //<@acblk_counts> of <@geo->npages>-bits-bitmap
-										//oc_bitmap *l2_bitmap_4_ac_pg;       //<acpg_counts_per_acblk * acblk_counts> of <pg_size/obj_size>-bitmap
+										//<@acblk_counts> of <@geo->npages>-bits-bitmap
+										//<acpg_counts_per_acblk * acblk_counts> of <pg_size/obj_size>-bitmap
 
-										//oc_bitmap *bitmap_4_obj_p_blk;    //<counts> of <blk_size/obj_size>-bits-bitmap
+										//<counts> of <blk_size/obj_size>-bits-bitmap
 
-
+	
 	void *obj_addr_tbl;                 //object address table or "oat"	(NAT)
 	int obj_num_max;
 }meta_block_area_t;
